@@ -247,7 +247,7 @@ class ResumeJSONEnricher:
                 raw = html.unescape(raw)
                 raw = raw.replace("Abstract:", "").replace("摘要:", "").strip()
                 return raw
-        for pat in [r'<meta[^>]+name="description"[^>]+content="([^"]+)"', r'<meta[^>]+property="og:description"[^>]+content="([^"]+)'', r'<meta[^>]+name="twitter:description"[^>]+content="([^"]+)'']:
+        for pat in [r'<meta[^>]+name="description"[^>]+content="([^"]+)"', r'<meta[^>]+property="og:description"[^>]+content="([^"]+)"', r'<meta[^>]+name="twitter:description"[^>]+content="([^"]+)"']:
             m = re.search(pat, text, re.I)
             if m:
                 return html.unescape(m.group(1)).strip()
@@ -739,3 +739,5 @@ class ResumeJSONEnricher:
         except Exception:
             pass
         return str(out_path)
+
+    
