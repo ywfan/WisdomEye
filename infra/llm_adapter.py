@@ -49,7 +49,7 @@ class LLMAdapter:
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         prompt_text = "\n".join([str(m.get("content") or "") for m in msgs])
-        cache_key = json.dumps({"u": url, "m": self.model, "t": self.temperature, "p": prompt_text})
+        cache_key = json.dumps({"u": url, "n": self.model, "t": self.temperature, "p": prompt_text})
         cached = self.cache.get(cache_key)
         if cached is not None:
             return cached

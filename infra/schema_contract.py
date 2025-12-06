@@ -86,4 +86,3 @@ class SchemaContract:
             # string annotation -> ensure string
             return node if isinstance(node, str) else ""
         return _conform(obj if isinstance(obj, dict) else {}, self.schema)
-"""JSON Schema-like contract for validating and conforming resume data."""
