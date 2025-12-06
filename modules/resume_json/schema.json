@@ -1,0 +1,135 @@
+{
+  "basic_info": {
+    "name": "String, 姓名",
+    "highest_degree": "String, 最高学历",
+    "contact": {
+      "phone": "String",
+      "email": "String",
+      "location": "String",
+      "homepage": "String, 个人主页/Google Scholar/GitHub"
+    },
+    "summary": "String, 个人综述",
+    "academic_metrics": {
+      "citations": "String, 引用次数（如原文有）",
+      "h_index": "String, H-index（如原文有）",
+      "impact_highlights": "String, 其他影响力描述（如：ESI高被引论文）",
+      "h10_index": "String, h10-index（如公开页面可见）",
+      "citations_total": "String, Scholar总引用",
+      "citations_recent": "String, 近五年引用"
+    }
+  },
+  "research_interests": [
+    "String, 研究方向（如：LLM Agents, Computer Vision）"
+  ],
+  "education": [
+    {
+      "school": "String, 学校",
+      "degree": "String, 学位",
+      "major": "String, 专业",
+      "time_period": "String, 时间",
+      "supervisor": "String, 导师",
+      "thesis_title": "String, 毕业论文",
+      "details": "String, 成绩/排名/核心课程"
+    }
+  ],
+  "work_experience": [
+    {
+      "company": "String, 单位",
+      "title": "String, 职位",
+      "time_period": "String, 时间",
+      "responsibilities": "String, 职责描述"
+    }
+  ],
+  "research_grants": [
+    {
+      "title": "String, 课题/基金项目名称（含项目编号）",
+      "role": "String, 承担角色（如：主持人/核心骨干）",
+      "funding_source": "String, 资助机构（如：国家自然科学基金委/科技部）",
+      "time_period": "String"
+    }
+  ],
+  "project_experience": [
+    {
+      "project_name": "String, 落地项目/工程项目名称",
+      "role": "String, 角色",
+      "description": "String, 描述"
+    }
+  ],
+  "open_source_contributions": [
+    {
+      "repo_name": "String, 仓库/项目名",
+      "role": "String, 贡献类型（Creator/Contributor/Maintainer）",
+      "metrics": "String, 影响力指标（如：2k Stars, 500 Forks）",
+      "url": "String, 链接",
+      "description": "String, 贡献描述"
+    }
+  ],
+  "publications": [
+    {
+      "title": "String, 标题",
+      "authors": ["String, 作者列表"],
+      "venue": "String, 发表处（期刊/会议）",
+      "status": "String, 状态",
+      "url": "String, 链接",
+      "abstract": "String, 摘要",
+      "summary": "String, 简介",
+      "date": "String, 时间"
+    }
+  ],
+  "patents": [
+    {
+      "title": "String, 专利名",
+      "status": "String",
+      "number": "String, 专利号"
+    }
+  ],
+  "academic_summary": [
+    "String, 研究方向和研究成果的总结"
+  ],
+  "summary": "String, 总体评价",
+  "academic_activities": [
+    {
+      "activity_name": "String, 活动名",
+      "role": "String, 角色（Speaker/PC Member/Reviewer）",
+      "description": "String"
+    }
+  ],
+  "memberships": [
+    "String, 专业组织会员（如：IEEE Senior Member, CCF会员）"
+  ],
+  "skills": {
+    "tech_stack": ["String"],
+    "languages": ["String"]
+  },
+  "awards": [
+    {
+      "name": "String, 奖项名",
+      "date": "String, 时间"
+    }
+  ],
+  "social_presence": [
+    {
+      "platform": "String, 平台名称（LinkedIn/知乎/Twitter/Blog）",
+      "account": "String, 账号/主页",
+      "url": "String, 链接",
+      "followers": "String, 粉丝数",
+      "posts_per_month": "String, 发文频率",
+      "topics": "String, 技术话题要点"
+    }
+  ],
+  "social_influence": {
+    "summary": "String, 综合声量与影响力描述",
+    "signals": ["String, 代表性信号（如：受欢迎的技术观点/被转发次数等）"]
+  },
+  "network_graph": {
+    "nodes": [
+      {"name": "String", "role": "String, 导师/学生/合作者", "affiliation": "String, 机构"}
+    ],
+    "edges": [
+      {"source": "String", "target": "String", "relation": "String, 导师/合著/同门"}
+    ],
+    "circle_tags": ["String, 圈层标签"],
+    "centrality_metrics": {"degree": "String", "coauthor_weight": "String"}
+  },
+  "others": "String"
+}
