@@ -70,20 +70,24 @@ class PersonDisambiguator:
     """
     
     # Default weights for different matching dimensions
+    # Name is now much more critical - if name doesn't match, likely not same person
     DEFAULT_WEIGHTS = {
-        "name": 0.25,
-        "affiliation": 0.20,
-        "research_interests": 0.15,
-        "education": 0.15,
-        "coauthors": 0.10,
-        "publications": 0.10,
-        "email": 0.05
+        "name": 0.50,  # Increased from 0.25 - name is most critical
+        "affiliation": 0.15,
+        "research_interests": 0.12,
+        "education": 0.10,
+        "coauthors": 0.05,
+        "publications": 0.05,
+        "email": 0.03
     }
     
-    # Confidence thresholds
-    HIGH_CONFIDENCE = 0.80
-    MEDIUM_CONFIDENCE = 0.60
-    LOW_CONFIDENCE = 0.40
+    # Confidence thresholds - made more strict
+    HIGH_CONFIDENCE = 0.85
+    MEDIUM_CONFIDENCE = 0.70  # Increased from 0.60
+    LOW_CONFIDENCE = 0.50  # Increased from 0.40
+    
+    # Minimum name similarity required (hard threshold)
+    MIN_NAME_SIMILARITY = 0.75  # Names must be at least 75% similar
     
     def __init__(
         self,
@@ -118,8 +122,19 @@ class PersonDisambiguator:
         # Calculate similarity scores for each dimension
         scores = {}
         
-        # Name similarity (critical)
-        scores["name"] = self._name_similarity(target.name, candidate.name)
+        # Name similarity (critical) - STRICT VALIDATION
+        name_score = self._name_similarity(target.name, candidate.name)
+        scores["name"] = name_score
+        
+        # CRITICAL: If name similarity is too low, reject immediately
+        # This prevents matching partial names like "王明" with "王明华" or other non-matching names
+        if name_score < self.MIN_NAME_SIMILARITY:
+            return DisambiguationResult(
+                is_match=False,
+                confidence=name_score * 0.5,  # Very low confidence
+                evidence=scores,
+                explanation=f"Name mismatch: '{target.name}' vs '{candidate.name}' (similarity: {name_score:.2f} < {self.MIN_NAME_SIMILARITY:.2f}). Rejected."
+            )
         
         # Affiliation similarity
         scores["affiliation"] = self._list_similarity(
@@ -167,7 +182,9 @@ class PersonDisambiguator:
     
     def _name_similarity(self, name1: str, name2: str) -> float:
         """
-        Calculate name similarity with handling for Chinese/English names.
+        Calculate name similarity with ULTRA-STRICT handling for Chinese/English names.
+        
+        CRITICAL: Completely rejects partial matches like "王明" vs "王明华"
         
         Args:
             name1: First name
@@ -180,26 +197,104 @@ class PersonDisambiguator:
             return 0.0
         
         # Normalize names
-        name1 = self._normalize_name(name1)
-        name2 = self._normalize_name(name2)
+        name1_norm = self._normalize_name(name1)
+        name2_norm = self._normalize_name(name2)
         
         # Exact match
-        if name1 == name2:
+        if name1_norm == name2_norm:
             return 1.0
         
+        # For Chinese names (>=2 Chinese characters) - ULTRA STRICT
+        if self._is_chinese_name(name1_norm) and self._is_chinese_name(name2_norm):
+            return self._chinese_name_similarity_strict(name1_norm, name2_norm)
+        
+        # For English names with spaces
+        parts1 = name1_norm.split()
+        parts2 = name2_norm.split()
+        
         # Check if one is abbreviation of other (e.g., "Zhang W" vs "Wei Zhang")
-        if self._is_name_abbreviation(name1, name2):
-            return 0.95
+        if self._is_name_abbreviation(name1_norm, name2_norm):
+            return 0.90  # Slightly lower than exact match
         
         # Check reversed order (Chinese vs Western name order)
-        parts1 = name1.split()
-        parts2 = name2.split()
         if len(parts1) == len(parts2) == 2:
             if parts1[0] == parts2[1] and parts1[1] == parts2[0]:
-                return 0.95
+                return 0.90
         
-        # String similarity as fallback
-        return SequenceMatcher(None, name1, name2).ratio()
+        # For English names - strict length check first
+        # Reject if length difference is too large (e.g., "Lin" vs "Lincoln")
+        if abs(len(name1_norm) - len(name2_norm)) > 3:
+            return 0.0
+        
+        # String similarity as fallback - but be VERY strict
+        base_similarity = SequenceMatcher(None, name1_norm, name2_norm).ratio()
+        
+        # Only accept if similarity is very high (>= 0.85)
+        if base_similarity < 0.85:
+            return 0.0
+        
+        # Penalize if names are different in length
+        len_ratio = min(len(name1_norm), len(name2_norm)) / max(len(name1_norm), len(name2_norm))
+        
+        return base_similarity * len_ratio
+    
+    def _is_chinese_name(self, name: str) -> bool:
+        """Check if name contains Chinese characters."""
+        chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', name))
+        return chinese_chars >= 2
+    
+    def _chinese_name_similarity_strict(self, name1: str, name2: str) -> float:
+        """
+        Calculate similarity for Chinese names with ULTRA-STRICT matching.
+        
+        Example: "王明" should COMPLETELY REJECT "王明华" (score = 0.0)
+        Only accept exact matches or very close variations.
+        """
+        # Extract Chinese characters only
+        chars1 = re.findall(r'[\u4e00-\u9fff]', name1)
+        chars2 = re.findall(r'[\u4e00-\u9fff]', name2)
+        
+        if not chars1 or not chars2:
+            return 0.0
+        
+        # CRITICAL: If lengths are different, REJECT immediately
+        # "王明" (2 chars) vs "王明华" (3 chars) = 0.0
+        if len(chars1) != len(chars2):
+            return 0.0
+        
+        # For same-length names, check character-by-character exact match
+        matches = sum(1 for c1, c2 in zip(chars1, chars2) if c1 == c2)
+        
+        # Calculate match ratio
+        match_ratio = matches / len(chars1)
+        
+        # ULTRA STRICT: Only accept if ALL characters match (exact match)
+        # or at least 2 out of 3 chars match for 3-char names
+        if match_ratio == 1.0:
+            return 1.0
+        elif len(chars1) == 3 and matches >= 2:
+            # For 3-character names, allow 2/3 match (e.g., surname + one given name char)
+            # But still penalize it
+            return 0.70
+        else:
+            # All other cases: REJECT
+            return 0.0
+        
+        # For short names (2 chars), require exact match or very high similarity
+        if len(chars1) == 2 and len(chars2) == 2:
+            if chars1 == chars2:
+                return 1.0
+            elif chars1[0] == chars2[0]:  # Same surname
+                # Check if given names match
+                if chars1[1] == chars2[1]:
+                    return 1.0
+                else:
+                    return 0.5  # Same surname, different given name - maybe related but not same person
+            else:
+                return 0.0  # Different surname - definitely not same person
+        
+        # For longer names (3+ chars), use F1 score but be strict
+        return f1_score * 0.9  # Slightly penalize to be conservative
     
     def _normalize_name(self, name: str) -> str:
         """Normalize name for comparison."""
