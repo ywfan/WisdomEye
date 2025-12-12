@@ -1421,10 +1421,11 @@ def render_html(final_json_path: str) -> str:
         ("work", "工作经历"),
         ("internships", "实习经历"),
         ("overview", "综合评价"),
+        ("review", "学术评价"),
         ("evaluation", "维度评价"),
         ("scholar", "学术指标"),
         ("publications", "论文"),
-        ("awards", "奖项"),
+        ("awards-honors", "奖项与荣誉"),
         ("projects", "项目经验"),
         ("grants", "研究资助"),
         ("open_source", "开源贡献"),
@@ -1434,8 +1435,6 @@ def render_html(final_json_path: str) -> str:
         ("social", "社交声量"),
         ("network", "人脉图谱"),
         ("skills", "技能"),
-        ("honors", "荣誉"),
-        ("review", "学术综述"),
         ("others", "其他"),
         ("sources", "参考来源"),
     ]
@@ -1507,9 +1506,17 @@ def render_html(final_json_path: str) -> str:
             <div class='metrics'>{metrics_html}</div>
         </section>
         
+        <section id='review' class='section'>
+            <h2>学术评价</h2>
+            <details class='card' open>
+                <summary>点击展开/收起</summary>
+                <div class='text'>{_esc(review) if review else "暂无"}</div>
+            </details>
+        </section>
+        
         <section id='evaluation' class='section'>
             <h2>多维度评价</h2>
-            <div class='cards'>{eval_html}</div>
+            <div class='cards'>{eval_html if eval_html else "<div class='card empty-card'><div class='content'>暂无</div></div>"}</div>
         </section>
         
         <section id='scholar' class='section'>
@@ -1530,9 +1537,9 @@ def render_html(final_json_path: str) -> str:
             <ul class='cards'>{pubs_html if pubs_html else "<li class='card empty-card'><div class='content'>暂无</div></li>"}</ul>
         </section>
         
-        <section id='awards' class='section'>
-            <h2>奖项 <span class='hbadge'>{len(awards)}</span></h2>
-            <ul class='cards'>{awards_html if awards_html else "<li class='card empty-card'><div class='content'>暂无</div></li>"}</ul>
+        <section id='awards-honors' class='section'>
+            <h2>奖项与荣誉 <span class='hbadge'>{len(awards) + len(honors)}</span></h2>
+            <ul class='cards'>{awards_html}{honors_html if honors_html and honors_html != "<li class='card empty-card'><div class='content'>暂无</div></li>" else ""}{("<li class='card empty-card'><div class='content'>暂无</div></li>" if not awards_html and (not honors_html or honors_html == "<li class='card empty-card'><div class='content'>暂无</div></li>") else "")}</ul>
         </section>
         
         {("<section id='projects' class='section'>" + projects_block + "</section>") if projects_block else ""}
@@ -1556,19 +1563,6 @@ def render_html(final_json_path: str) -> str:
         <section id='skills' class='section'>
             <h2>技能</h2>
             <ul class='cards'>{skills_html if skills_html else "<li class='card empty-card'><div class='content'>暂无</div></li>"}</ul>
-        </section>
-        
-        <section id='honors' class='section'>
-            <h2>荣誉</h2>
-            <ul class='cards'>{honors_html}</ul>
-        </section>
-        
-        <section id='review' class='section'>
-            <h2>学术综述</h2>
-            <details class='card' open>
-                <summary>点击展开/收起</summary>
-                <div class='text'>{_esc(review) if review else "暂无"}</div>
-            </details>
         </section>
         
         <section id='others' class='section'>
