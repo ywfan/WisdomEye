@@ -8,8 +8,14 @@ import requests
 
 from utils.search import SearchClient
 from utils.llm import LLMClient
+from utils.person_disambiguation import (
+    PersonDisambiguator,
+    PersonProfile,
+    extract_profile_from_resume_json
+)
 from infra.social_adapter import SocialProviderAdapter
 from infra.scholar_metrics import ScholarMetricsFetcher
+from infra.scholar_metrics_enhanced import AcademicMetricsFetcher
 
 
 def _score(title: str, candidate: Dict[str, Any]) -> int:
@@ -64,11 +70,17 @@ def _extract_date(text: str) -> str:
 
 class ResumeJSONEnricher:
     """Augments resume JSON with web signals, evaluations and final aggregation."""
-    def __init__(self, search: Optional[SearchClient] = None, llm: Optional[LLMClient] = None, social: Optional[SocialProviderAdapter] = None, scholar: Optional[ScholarMetricsFetcher] = None):
+    def __init__(self, search: Optional[SearchClient] = None, llm: Optional[LLMClient] = None, social: Optional[SocialProviderAdapter] = None, scholar: Optional[ScholarMetricsFetcher] = None, use_enhanced_scholar: bool = True):
         self.search = search or SearchClient.from_env(dotenv_path=".env")
         self.llm = llm or LLMClient.from_env(dotenv_path=".env", temperature=0.0)
         self.social = social or SocialProviderAdapter()
-        self.scholar = scholar or ScholarMetricsFetcher()
+        # Use enhanced scholar fetcher if enabled
+        if use_enhanced_scholar:
+            self.scholar = AcademicMetricsFetcher().scholar_fetcher
+        else:
+            self.scholar = scholar or ScholarMetricsFetcher()
+        # Initialize person disambiguator
+        self.disambiguator = PersonDisambiguator(min_confidence=0.60)
 
     def enrich_publications(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Search publications, attach URL/abstract/summary and sources/evidence."""
@@ -379,7 +391,7 @@ class ResumeJSONEnricher:
             platform, kind = self._classify_social_url(u)
             if platform:
                 items.append({"title": t, "url": u, "content": c, "platform": platform, "kind": kind})
-        items = self._filter_social_items(name=name, education=(data.get("education") or []), items=items)
+        items = self._filter_social_items(name=name, education=(data.get("education") or []), items=items, resume_data=data)
         presence = self.social.normalize(items, platform="mixed")
         data["social_presence"] = presence
         inf_signals = []
@@ -435,20 +447,91 @@ class ResumeJSONEnricher:
             kind = "article"
         return plat, kind
 
-    def _filter_social_items(self, name: str, education: List[Dict[str, Any]], items: List[Dict[str, Any]], custom_neg_keywords: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-        """Filter likely self-related social items using heuristics and optional LLM.
+    def _extract_candidate_profile_from_social_item(self, item: Dict[str, Any]) -> PersonProfile:
+        """
+        Extract PersonProfile from a social media item.
+        
+        Args:
+            item: Social media item with title, url, content, platform
+            
+        Returns:
+            PersonProfile instance
+        """
+        # Extract name from title or content
+        title = item.get("title", "")
+        content = item.get("content", "")
+        url = item.get("url", "")
+        platform = item.get("platform", "")
+        
+        # Try to extract name (usually in title for profiles)
+        name = ""
+        if title:
+            # Remove platform names
+            name = title
+            for plat in ["LinkedIn", "ResearchGate", "Google Scholar", "GitHub", "知乎"]:
+                name = name.replace(plat, "").replace("|", "").replace("-", "")
+            name = name.strip()
+        
+        # Extract affiliations and research interests from content
+        affiliations = []
+        research_interests = []
+        
+        # Simple keyword extraction for affiliations
+        affiliation_keywords = ["University", "大学", "College", "学院", "Institute", "研究所", "Lab", "实验室"]
+        for keyword in affiliation_keywords:
+            if keyword in content:
+                # Extract surrounding context (simple approach)
+                idx = content.find(keyword)
+                if idx != -1:
+                    # Get surrounding words
+                    start = max(0, idx - 30)
+                    end = min(len(content), idx + 50)
+                    snippet = content[start:end].strip()
+                    affiliations.append(snippet)
+        
+        # Extract email domain if present
+        email = ""
+        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', content)
+        if email_match:
+            email = email_match.group(0)
+        
+        return PersonProfile(
+            name=name,
+            affiliations=list(set(affiliations))[:3],  # Limit to top 3
+            research_interests=research_interests,
+            email=email
+        )
+    
+    def _filter_social_items(self, name: str, education: List[Dict[str, Any]], items: List[Dict[str, Any]], custom_neg_keywords: Optional[List[str]] = None, resume_data: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """Filter likely self-related social items using heuristics, person disambiguation, and optional LLM.
         
         Args:
             name: Candidate name
             education: List of education entries
             items: Social media items to filter
             custom_neg_keywords: Optional list of negative keywords to exclude specific profiles
+            resume_data: Full resume data for person disambiguation (optional)
         
         Returns:
-            Filtered list of social items
+            Filtered list of social items with disambiguation metadata
         """
         nm = (name or "").strip()
         schools = [str((e or {}).get("school", "")) for e in (education or [])]
+        
+        # Extract target profile for disambiguation
+        target_profile = None
+        use_disambiguation = True
+        try:
+            import os as _os
+            use_disambiguation = _os.getenv("FEATURE_PERSON_DISAMBIGUATION", "1") == "1"
+        except Exception:
+            use_disambiguation = True
+        
+        if use_disambiguation and resume_data:
+            try:
+                target_profile = extract_profile_from_resume_json(resume_data)
+            except Exception as e:
+                print(f"[人物消歧-错误] 无法提取目标画像: {e}")
         
         def _signals() -> Dict[str, List[str]]:
             """Build signal keywords from education background."""
@@ -500,9 +583,30 @@ class ResumeJSONEnricher:
         llm = self.llm if use_llm else None
         for it in (items or []):
             keep = heur(it)
+            disambiguation_result = None
+            
+            # Apply person disambiguation for profiles
+            if use_disambiguation and target_profile and it.get("kind") == "profile":
+                try:
+                    # Extract candidate profile from social item
+                    candidate_profile = self._extract_candidate_profile_from_social_item(it)
+                    
+                    # Disambiguate
+                    disambiguation_result = self.disambiguator.disambiguate(target_profile, candidate_profile)
+                    
+                    # Update keep decision based on disambiguation
+                    if disambiguation_result.confidence >= 0.60:
+                        keep = disambiguation_result.is_match
+                        print(f"[人物消歧] {it.get('platform','')} - {it.get('url','')[:80]}: 置信度={disambiguation_result.confidence:.3f}, 匹配={keep}")
+                    else:
+                        # Low confidence, keep heuristic decision but log it
+                        print(f"[人物消歧-低置信度] {it.get('platform','')}: 置信度={disambiguation_result.confidence:.3f}, 使用启发式结果={keep}")
+                except Exception as e:
+                    print(f"[人物消歧-错误] {it.get('platform','')}: {e}")
+            
             # Only call LLM for borderline cases
             borderline = not keep
-            if (llm is not None) and borderline:
+            if (llm is not None) and borderline and not disambiguation_result:
                 ctx = {
                     "name": nm,
                     "schools": schools,
@@ -518,30 +622,69 @@ class ResumeJSONEnricher:
                     # ignore and fall back to heuristic
                     pass
             if keep:
+                # Add disambiguation metadata if available
+                if disambiguation_result:
+                    it["disambiguation"] = {
+                        "confidence": disambiguation_result.confidence,
+                        "explanation": disambiguation_result.explanation,
+                        "evidence": {k: round(v, 3) for k, v in disambiguation_result.evidence.items()}
+                    }
                 out.append(it)
         return out
 
     def enrich_scholar_metrics(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Attach scholar metrics, updating basic_info.academic_metrics and sources."""
+        """Attach scholar metrics using enhanced fetcher with active crawling."""
         basic = data.get("basic_info") or {}
         name = basic.get("name") or data.get("name") or ""
         if not name:
             return data
+        
+        # Try to get affiliation for better search results
+        affiliation = None
+        edu = data.get("education") or []
+        if edu:
+            # Use most recent education (first in list)
+            affiliation = edu[0].get("school", "") if edu else None
+        
+        # First try: search for scholar profile URL
         rs = self.search.search(f"{name} Google Scholar", max_results=5, engines=["tavily", "bocha"]) or []
-        prof = None
+        profile_url = None
         for r in rs:
             u = r.get("url") or ""
             if "scholar.google" in u and "citations" in u:
-                prof = r
+                profile_url = u
                 break
-        metrics = self.scholar.run(name=name, profile_url=(prof or {}).get("url"), content=(prof or {}).get("content"))
+        
+        # Fetch metrics using enhanced fetcher
+        # The enhanced fetcher will:
+        # 1. Try direct URL if provided
+        # 2. Fall back to search-and-crawl if no URL
+        # 3. Parse with multiple strategies
+        print(f"[学术指标] 获取 {name} 的学术指标 (profile_url={profile_url or '无'}, affiliation={affiliation or '无'})")
+        metrics = self.scholar.run(
+            name=name,
+            profile_url=profile_url,
+            affiliation=affiliation
+        )
+        
+        # Update basic_info with metrics
         am = ((data.setdefault("basic_info", {})).setdefault("academic_metrics", {}))
         for k, v in metrics.items():
-            am[k] = v
-        if prof and prof.get("url"):
+            if v:  # Only add non-empty values
+                am[k] = v
+        
+        # Add profile URL to sources if found
+        if profile_url:
             srcs = data.get("profile_sources") or []
-            srcs.append(prof.get("url"))
+            srcs.append(profile_url)
             data["profile_sources"] = list(dict.fromkeys(srcs))
+        
+        # Log results
+        if any(metrics.values()):
+            print(f"[学术指标-成功] h-index={metrics.get('h_index','N/A')}, citations={metrics.get('citations_total','N/A')}")
+        else:
+            print(f"[学术指标-警告] 未能获取到 {name} 的学术指标")
+        
         return data
 
     def enrich_network_graph(self, data: Dict[str, Any]) -> Dict[str, Any]:

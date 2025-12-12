@@ -27,8 +27,34 @@ PROMPT_BASE = (
 
 3.  **字段归类原则 (Strict Categorization)**：
     * **学术区分**：
-        * **论文**：包含已发表、在投（Under Review）、预印本（ArXiv）等。
-        * **学术活动**：不仅包含“参加会议”，还包含“组织会议”、“担任审稿人”、“受邀讲座”等学术服务工作。
+        * **论文（CRITICAL - 必须完整识别）**：
+            **✅ 必须包含以下所有状态的学术成果**：
+            - 已发表 (Published): 在期刊、会议上正式发表
+            - 已接收 (Accepted): 已被接收但未正式发表
+            - 在投/审稿中 (Under Review / In Review / Submitted / In Submission)
+            - 修订中 (Revise and Resubmit / R&R / Major Revision / Minor Revision)
+            - 预印本 (Preprint): 包括 arXiv、bioRxiv、medRxiv、SSRN、ResearchGate Preprint等
+            - 工作论文 (Working Paper / Draft)
+            - 技术报告 (Technical Report): 如果包含研究性内容
+            
+            **识别特征**（满足任一即可归类为论文）：
+            - 包含作者列表和标题
+            - 有摘要或研究内容描述
+            - 有明确的发表意图或已在线托管
+            - 包含 DOI、arXiv ID、URL链接、或预印本编号
+            
+            **⚠️ 特别注意 - 不要遗漏这些关键词**：
+            - arXiv编号: arXiv:YYMM.NNNNN 或 arXiv:arch-ive/YYMMNNN
+            - 状态词: "submitted", "under review", "in review", "preprint", "arxiv", "biorxiv", "medRxiv", "ssrn"
+            - 修订词: "revise and resubmit", "major revision", "minor revision", "R&R"
+            
+            **❌ 不归入publications**：
+            - 纯课程作业（除非已投稿）
+            - 毕业论文（除非已发表或投稿）
+            - 内部文档（除非公开发表）
+        
+        * **学术活动**：不仅包含"参加会议"，还包含"组织会议"、"担任审稿人"、"受邀讲座"等学术服务工作。
+    
     * **荣誉 vs 获奖**：优先区分。无法明确区分时，优先放入 `awards`。
 
 # Output JSON Schema
