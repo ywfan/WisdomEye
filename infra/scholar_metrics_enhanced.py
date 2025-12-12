@@ -486,25 +486,192 @@ class ScholarMetricsFetcher:
         )
 
 
+class ResearchGateFetcher:
+    """Fetcher for ResearchGate metrics."""
+    
+    def __init__(self, timeout: float = 10.0):
+        """Initialize ResearchGate fetcher."""
+        self.timeout = timeout
+        self.session = requests.Session()
+    
+    def fetch_metrics(self, name: str, profile_url: Optional[str] = None) -> Dict[str, str]:
+        """
+        Fetch metrics from ResearchGate.
+        
+        Args:
+            name: Person's name
+            profile_url: Direct ResearchGate profile URL
+            
+        Returns:
+            Dictionary with metrics
+        """
+        try:
+            if not profile_url:
+                # Try to search for profile
+                search_url = f"https://www.researchgate.net/search?q={quote_plus(name)}"
+                headers = AntiBlockStrategy.get_headers()
+                response = self.session.get(search_url, headers=headers, timeout=self.timeout)
+                
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    # Find profile link
+                    profile_link = soup.find('a', href=re.compile(r'/profile/'))
+                    if profile_link:
+                        profile_url = 'https://www.researchgate.net' + profile_link['href']
+            
+            if profile_url:
+                headers = AntiBlockStrategy.get_headers()
+                response = self.session.get(profile_url, headers=headers, timeout=self.timeout)
+                
+                if response.status_code == 200:
+                    return self._parse_profile(response.text)
+            
+        except Exception as e:
+            emit({"kind": "researchgate_error", "error": str(e)})
+        
+        return self._empty_metrics()
+    
+    def _parse_profile(self, html: str) -> Dict[str, str]:
+        """Parse ResearchGate profile page."""
+        metrics = self._empty_metrics()
+        
+        try:
+            soup = BeautifulSoup(html, 'html.parser')
+            
+            # Look for publication count
+            pub_elem = soup.find('div', class_=re.compile('publication.*count'))
+            if pub_elem:
+                metrics['publications'] = re.search(r'\d+', pub_elem.get_text()).group()
+            
+            # Look for citations
+            cite_elem = soup.find('div', class_=re.compile('citation.*count'))
+            if cite_elem:
+                metrics['citations_total'] = re.search(r'\d+', cite_elem.get_text()).group()
+            
+            # Look for reads
+            read_elem = soup.find('div', class_=re.compile('read.*count'))
+            if read_elem:
+                metrics['reads'] = re.search(r'\d+', read_elem.get_text()).group()
+            
+            # RG Score
+            score_elem = soup.find('div', class_=re.compile('rg.*score'))
+            if score_elem:
+                metrics['rg_score'] = re.search(r'[\d.]+', score_elem.get_text()).group()
+            
+        except Exception:
+            pass
+        
+        return metrics
+    
+    def _empty_metrics(self) -> Dict[str, str]:
+        """Return empty metrics."""
+        return {
+            "publications": "",
+            "citations_total": "",
+            "reads": "",
+            "rg_score": ""
+        }
+
+
+class SemanticScholarFetcher:
+    """Fetcher for Semantic Scholar metrics using their API."""
+    
+    def __init__(self, timeout: float = 10.0):
+        """Initialize Semantic Scholar fetcher."""
+        self.timeout = timeout
+        self.base_url = "https://api.semanticscholar.org/v1"
+        self.session = requests.Session()
+    
+    def fetch_metrics(self, name: str, affiliation: Optional[str] = None) -> Dict[str, str]:
+        """
+        Fetch metrics from Semantic Scholar API.
+        
+        Args:
+            name: Person's name
+            affiliation: Person's affiliation
+            
+        Returns:
+            Dictionary with metrics
+        """
+        try:
+            # Search for author
+            search_url = f"{self.base_url}/author/search"
+            params = {"query": name}
+            if affiliation:
+                params["query"] = f"{name} {affiliation}"
+            
+            response = self.session.get(
+                search_url,
+                params=params,
+                timeout=self.timeout
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data and "authors" in data and data["authors"]:
+                    # Get first author (best match)
+                    author = data["authors"][0]
+                    author_id = author.get("authorId")
+                    
+                    if author_id:
+                        return self._fetch_author_details(author_id)
+            
+        except Exception as e:
+            emit({"kind": "semantic_scholar_error", "error": str(e)})
+        
+        return self._empty_metrics()
+    
+    def _fetch_author_details(self, author_id: str) -> Dict[str, str]:
+        """Fetch detailed author metrics."""
+        try:
+            url = f"{self.base_url}/author/{author_id}"
+            response = self.session.get(url, timeout=self.timeout)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    "paper_count": str(data.get("paperCount", "")),
+                    "citation_count": str(data.get("citationCount", "")),
+                    "h_index": str(data.get("hIndex", "")),
+                    "author_id": author_id
+                }
+        except Exception:
+            pass
+        
+        return self._empty_metrics()
+    
+    def _empty_metrics(self) -> Dict[str, str]:
+        """Return empty metrics."""
+        return {
+            "paper_count": "",
+            "citation_count": "",
+            "h_index": "",
+            "author_id": ""
+        }
+
+
 class AcademicMetricsFetcher:
     """
     Multi-platform academic metrics aggregator.
     
     Fetches and combines metrics from multiple sources:
-    - Google Scholar
-    - ResearchGate (if available)
-    - Semantic Scholar (if available)
+    - Google Scholar (primary)
+    - ResearchGate (secondary)
+    - Semantic Scholar (tertiary)
     """
     
     def __init__(self):
         """Initialize the multi-platform fetcher."""
         self.scholar_fetcher = ScholarMetricsFetcher()
+        self.researchgate_fetcher = ResearchGateFetcher()
+        self.semantic_scholar_fetcher = SemanticScholarFetcher()
     
     def fetch_all(
         self,
         name: str,
         scholar_url: Optional[str] = None,
-        affiliation: Optional[str] = None
+        affiliation: Optional[str] = None,
+        researchgate_url: Optional[str] = None
     ) -> Dict[str, Dict[str, str]]:
         """
         Fetch metrics from all available platforms.
@@ -513,6 +680,7 @@ class AcademicMetricsFetcher:
             name: Person's name
             scholar_url: Google Scholar profile URL
             affiliation: Person's affiliation
+            researchgate_url: ResearchGate profile URL
             
         Returns:
             Dictionary with platform names as keys and metrics as values
@@ -520,6 +688,7 @@ class AcademicMetricsFetcher:
         results = {}
         
         # Fetch from Google Scholar
+        print(f"[学术指标聚合] 从Google Scholar获取 {name} 的指标...")
         scholar_metrics = self.scholar_fetcher.run(
             name=name,
             profile_url=scholar_url,
@@ -527,8 +696,21 @@ class AcademicMetricsFetcher:
         )
         results['google_scholar'] = scholar_metrics
         
-        # TODO: Add ResearchGate fetcher
-        # TODO: Add Semantic Scholar fetcher
+        # Fetch from ResearchGate
+        print(f"[学术指标聚合] 从ResearchGate获取 {name} 的指标...")
+        researchgate_metrics = self.researchgate_fetcher.fetch_metrics(
+            name=name,
+            profile_url=researchgate_url
+        )
+        results['researchgate'] = researchgate_metrics
+        
+        # Fetch from Semantic Scholar
+        print(f"[学术指标聚合] 从Semantic Scholar获取 {name} 的指标...")
+        semantic_scholar_metrics = self.semantic_scholar_fetcher.fetch_metrics(
+            name=name,
+            affiliation=affiliation
+        )
+        results['semantic_scholar'] = semantic_scholar_metrics
         
         return results
     
