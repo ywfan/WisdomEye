@@ -4,7 +4,10 @@ from typing import Any, Dict, List, Tuple
 
 class SchemaContract:
     """Loads a JSON schema and provides validate/conform helpers."""
-    def __init__(self, schema_path: str = "modules/resume_json/schema.json"):
+    def __init__(self, schema_path: str = None):
+        if schema_path is None:
+            # Use absolute path relative to this file's location
+            schema_path = str(Path(__file__).parent.parent / "modules" / "resume_json" / "schema.json")
         self.schema_path = schema_path
         self.schema = self._load_schema()
 

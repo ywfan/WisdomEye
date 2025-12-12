@@ -187,15 +187,22 @@ class LLMClient:
                         print(f"[LLM错误] {e}")
                     except Exception:
                         pass
-                    if not tried_alt:
+                    # Try alternate provider only after exhausting retries on primary
+                    if attempt == self.retries - 1 and not tried_alt:
                         alt_key = os.getenv("AIHUB_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or None
                         alt_base = os.getenv("AIHUB_BASE_URL") or os.getenv("DEEPSEEK_BASE_URL") or None
-                        if alt_key and alt_base:
+                        # Only use alternate if different from current provider
+                        if alt_key and alt_base and alt_base != self.base_url:
                             headers = {"Content-Type": "application/json", "Authorization": f"Bearer {alt_key}"}
                             url = alt_base.rstrip("/") + "/chat/completions"
+                            # Update model to a safe default for alternate provider
+                            if "deepseek" in alt_base.lower():
+                                body["model"] = "deepseek-chat"
+                            elif "aihub" in alt_base.lower():
+                                body["model"] = os.getenv("AIHUB_DEFAULT_MODEL", "gpt-3.5-turbo")
                             tried_alt = True
                             try:
-                                print("[LLM切换] fallback_provider=aihub/deepseek")
+                                print(f"[LLM切换] fallback to {alt_base} with model {body['model']}")
                             except Exception:
                                 pass
                     time.sleep(min(1.0 + attempt, 2.0))
@@ -254,15 +261,22 @@ class LLMClient:
                         print(f"[LLM错误] {e}")
                     except Exception:
                         pass
-                    if not tried_alt:
+                    # Try alternate provider only after exhausting retries on primary
+                    if attempt == self.retries - 1 and not tried_alt:
                         alt_key = os.getenv("AIHUB_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or None
                         alt_base = os.getenv("AIHUB_BASE_URL") or os.getenv("DEEPSEEK_BASE_URL") or None
-                        if alt_key and alt_base:
+                        # Only use alternate if different from current provider
+                        if alt_key and alt_base and alt_base != self.base_url:
                             headers = {"Content-Type": "application/json", "Authorization": f"Bearer {alt_key}"}
                             url = alt_base.rstrip("/") + "/chat/completions"
+                            # Update model to a safe default for alternate provider
+                            if "deepseek" in alt_base.lower():
+                                body["model"] = "deepseek-chat"
+                            elif "aihub" in alt_base.lower():
+                                body["model"] = os.getenv("AIHUB_DEFAULT_MODEL", "gpt-3.5-turbo")
                             tried_alt = True
                             try:
-                                print("[LLM切换] fallback_provider=aihub/deepseek")
+                                print(f"[LLM切换] fallback to {alt_base} with model {body['model']}")
                             except Exception:
                                 pass
                     time.sleep(min(1.0 + attempt, 2.0))
