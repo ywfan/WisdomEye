@@ -16,6 +16,7 @@ from utils.person_disambiguation import (
 from infra.social_adapter import SocialProviderAdapter
 from infra.scholar_metrics import ScholarMetricsFetcher
 from infra.scholar_metrics_enhanced import AcademicMetricsFetcher
+from infra.social_content_crawler import SocialContentCrawler
 
 
 def _score(title: str, candidate: Dict[str, Any]) -> int:
@@ -80,7 +81,9 @@ class ResumeJSONEnricher:
         else:
             self.scholar = scholar or ScholarMetricsFetcher()
         # Initialize person disambiguator
-        self.disambiguator = PersonDisambiguator(min_confidence=0.60)
+        self.disambiguator = PersonDisambiguator(min_confidence=0.75)  # Raised from 0.60 to reduce false positives
+        # Initialize social content crawler for deep analysis
+        self.content_crawler = SocialContentCrawler(timeout=10.0, max_posts=10)
 
     def enrich_publications(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Search publications, attach URL/abstract/summary and sources/evidence."""
@@ -392,6 +395,10 @@ class ResumeJSONEnricher:
             if platform:
                 items.append({"title": t, "url": u, "content": c, "platform": platform, "kind": kind})
         items = self._filter_social_items(name=name, education=(data.get("education") or []), items=items, resume_data=data)
+        
+        # Perform deep content analysis on filtered profiles
+        items = self._enrich_with_deep_analysis(items)
+        
         presence = self.social.normalize(items, platform="mixed")
         data["social_presence"] = presence
         inf_signals = []
@@ -571,7 +578,8 @@ class ResumeJSONEnricher:
                 score += 1
             score += sum(1 for kw in sig["pos"] if kw in s)
             score += sum(1 for kw in sig["tech"] if kw in s)
-            return score >= 3
+            # STRICTER: Raised from 3 to 4 to reduce false positives
+            return score >= 4
         out: List[Dict[str, Any]] = []
         # LLM-assisted filtering when configured
         use_llm = True
@@ -595,12 +603,18 @@ class ResumeJSONEnricher:
                     disambiguation_result = self.disambiguator.disambiguate(target_profile, candidate_profile)
                     
                     # Update keep decision based on disambiguation
-                    if disambiguation_result.confidence >= 0.60:
+                    # Use HIGH threshold (0.75) to reduce false positives
+                    if disambiguation_result.confidence >= 0.75:
                         keep = disambiguation_result.is_match
-                        print(f"[人物消歧] {it.get('platform','')} - {it.get('url','')[:80]}: 置信度={disambiguation_result.confidence:.3f}, 匹配={keep}")
+                        print(f"[人物消歧-高置信度] {it.get('platform','')} - {it.get('url','')[:80]}: 置信度={disambiguation_result.confidence:.3f}, 匹配={keep}")
+                    elif disambiguation_result.confidence >= 0.60:
+                        # Medium confidence: be conservative, reject by default
+                        keep = False
+                        print(f"[人物消歧-中置信度-拒绝] {it.get('platform','')}: 置信度={disambiguation_result.confidence:.3f}")
                     else:
-                        # Low confidence, keep heuristic decision but log it
-                        print(f"[人物消歧-低置信度] {it.get('platform','')}: 置信度={disambiguation_result.confidence:.3f}, 使用启发式结果={keep}")
+                        # Low confidence: reject
+                        keep = False
+                        print(f"[人物消歧-低置信度-拒绝] {it.get('platform','')}: 置信度={disambiguation_result.confidence:.3f}")
                 except Exception as e:
                     print(f"[人物消歧-错误] {it.get('platform','')}: {e}")
             
@@ -631,6 +645,127 @@ class ResumeJSONEnricher:
                     }
                 out.append(it)
         return out
+    
+    def _enrich_with_deep_analysis(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Perform deep content analysis on social profiles.
+        
+        This adds sentiment analysis, topic extraction, and engagement metrics
+        to provide truly deep insights into the candidate's social presence.
+        
+        Args:
+            items: Filtered social items
+            
+        Returns:
+            Items with deep analysis metadata
+        """
+        # Check if deep analysis is enabled
+        use_deep_analysis = True
+        try:
+            import os as _os
+            use_deep_analysis = _os.getenv("FEATURE_DEEP_SOCIAL_ANALYSIS", "1") == "1"
+        except Exception:
+            use_deep_analysis = True
+        
+        if not use_deep_analysis:
+            return items
+        
+        enriched_items = []
+        for item in items:
+            try:
+                platform = item.get("platform", "").lower()
+                url = item.get("url", "")
+                
+                # Only analyze profile pages (not search results)
+                if item.get("kind") != "profile":
+                    enriched_items.append(item)
+                    continue
+                
+                # Crawl profile for recent posts/content
+                print(f"[深度分析] 正在分析 {platform} 个人主页: {url[:80]}")
+                posts = self.content_crawler.crawl_profile(platform, url, max_posts=5)
+                
+                if not posts:
+                    enriched_items.append(item)
+                    continue
+                
+                # Analyze each post
+                analyses = []
+                total_engagement = 0
+                for post in posts:
+                    analysis = self.content_crawler.analyze(post)
+                    analyses.append(analysis)
+                    total_engagement += post.engagement_score()
+                
+                # Aggregate analysis
+                sentiments = [a.sentiment for a in analyses]
+                all_topics = []
+                all_keywords = []
+                for a in analyses:
+                    all_topics.extend(a.topics)
+                    all_keywords.extend(a.keywords)
+                
+                # Calculate sentiment distribution
+                sentiment_dist = {
+                    "positive": sentiments.count("positive") / len(sentiments) if sentiments else 0,
+                    "neutral": sentiments.count("neutral") / len(sentiments) if sentiments else 0,
+                    "negative": sentiments.count("negative") / len(sentiments) if sentiments else 0,
+                }
+                
+                # Get top topics and keywords (by frequency)
+                topic_counts = {}
+                for topic in all_topics:
+                    topic_counts[topic] = topic_counts.get(topic, 0) + 1
+                top_topics = sorted(topic_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+                
+                keyword_counts = {}
+                for kw in all_keywords:
+                    keyword_counts[kw] = keyword_counts.get(kw, 0) + 1
+                top_keywords = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+                
+                # Calculate average technical depth
+                depth_map = {"shallow": 1, "medium": 2, "deep": 3}
+                avg_depth = sum(depth_map.get(a.technical_depth, 1) for a in analyses) / len(analyses) if analyses else 0
+                technical_depth = "shallow" if avg_depth < 1.5 else "medium" if avg_depth < 2.5 else "deep"
+                
+                # Add deep analysis metadata
+                item["deep_analysis"] = {
+                    "posts_analyzed": len(posts),
+                    "total_engagement": round(total_engagement, 2),
+                    "avg_engagement": round(total_engagement / len(posts), 2) if posts else 0,
+                    "sentiment_distribution": {k: round(v, 3) for k, v in sentiment_dist.items()},
+                    "top_topics": [{"topic": t, "count": c} for t, c in top_topics],
+                    "top_keywords": [{"keyword": k, "count": c} for k, c in top_keywords],
+                    "technical_depth": technical_depth,
+                    "analysis_summary": self._generate_deep_analysis_summary(
+                        platform, sentiment_dist, top_topics, technical_depth, total_engagement
+                    )
+                }
+                
+                print(f"[深度分析-完成] {platform}: 分析{len(posts)}篇内容, 技术深度={technical_depth}, 总互动={total_engagement:.0f}")
+                
+            except Exception as e:
+                print(f"[深度分析-错误] {item.get('platform', '')}: {e}")
+            
+            enriched_items.append(item)
+        
+        return enriched_items
+    
+    def _generate_deep_analysis_summary(
+        self,
+        platform: str,
+        sentiment_dist: Dict[str, float],
+        top_topics: List[tuple],
+        technical_depth: str,
+        total_engagement: float
+    ) -> str:
+        """Generate a natural language summary of deep analysis."""
+        sentiment_str = "积极" if sentiment_dist.get("positive", 0) > 0.5 else "中立" if sentiment_dist.get("neutral", 0) > 0.4 else "多样"
+        topics_str = "、".join([t[0] for t in top_topics[:3]]) if top_topics else "多个领域"
+        depth_str = {"shallow": "入门级", "medium": "中等深度", "deep": "深度技术"}[technical_depth]
+        engagement_str = "高" if total_engagement > 1000 else "中" if total_engagement > 100 else "一般"
+        
+        return f"该{platform}账号发布内容以{sentiment_str}为主，主要涉及{topics_str}等主题，技术深度为{depth_str}，社区影响力{engagement_str}。"
 
     def enrich_scholar_metrics(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Attach scholar metrics using enhanced fetcher with active crawling."""
