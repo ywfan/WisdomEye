@@ -127,7 +127,7 @@ class PersonDisambiguator:
         scores["name"] = name_score
         
         # CRITICAL: If name similarity is too low, reject immediately
-        # This prevents matching "林挺" with "林正挺" or other non-matching names
+        # This prevents matching partial names like "王明" with "王明华" or other non-matching names
         if name_score < self.MIN_NAME_SIMILARITY:
             return DisambiguationResult(
                 is_match=False,
@@ -184,7 +184,7 @@ class PersonDisambiguator:
         """
         Calculate name similarity with ULTRA-STRICT handling for Chinese/English names.
         
-        CRITICAL: Completely rejects partial matches like "林挺" vs "林正挺"
+        CRITICAL: Completely rejects partial matches like "王明" vs "王明华"
         
         Args:
             name1: First name
@@ -247,7 +247,7 @@ class PersonDisambiguator:
         """
         Calculate similarity for Chinese names with ULTRA-STRICT matching.
         
-        Example: "林挺" should COMPLETELY REJECT "林正挺" (score = 0.0)
+        Example: "王明" should COMPLETELY REJECT "王明华" (score = 0.0)
         Only accept exact matches or very close variations.
         """
         # Extract Chinese characters only
@@ -258,7 +258,7 @@ class PersonDisambiguator:
             return 0.0
         
         # CRITICAL: If lengths are different, REJECT immediately
-        # "林挺" (2 chars) vs "林正挺" (3 chars) = 0.0
+        # "王明" (2 chars) vs "王明华" (3 chars) = 0.0
         if len(chars1) != len(chars2):
             return 0.0
         

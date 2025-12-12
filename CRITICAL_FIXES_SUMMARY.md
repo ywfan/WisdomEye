@@ -8,7 +8,7 @@
 
 ### 问题描述
 1. **姓名匹配过于宽松**: 出现了完全不是候选人的其他人，甚至出现了并不同名的情况
-   - 示例: "林挺" 搜出来的结果有 "林正挺"
+   - 示例: 部分匹配错误（如 2字名匹配到 3字名）
 2. **分析不够深入**: 结果太浅，没有深入分析社交媒体内容
 
 ### 影响范围
@@ -29,7 +29,7 @@
 def _chinese_name_similarity_strict(self, name1: str, name2: str) -> float:
     """
     CRITICAL: 如果长度不同，立即拒绝
-    - "林挺" (2字) vs "林正挺" (3字) → 0.0 (完全拒绝)
+    - "王明" (2字) vs "王明华" (3字) → 0.0 (完全拒绝)
     - "张伟" (2字) vs "张伟国" (3字) → 0.0 (完全拒绝)
     """
     chars1 = re.findall(r'[\u4e00-\u9fff]', name1)
@@ -53,14 +53,14 @@ def _chinese_name_similarity_strict(self, name1: str, name2: str) -> float:
 
 **测试结果**:
 ```
-✅ 测试1: "林挺" vs "林正挺" → 匹配=False, 置信度=0.000, 姓名相似度=0.000
-✅ 测试2: "林挺" vs "林挺"   → 匹配=False, 置信度=0.500, 姓名相似度=1.000
+✅ 测试1: "王明" vs "王明华" → 匹配=False, 置信度=0.000, 姓名相似度=0.000
+✅ 测试2: "王明" vs "王明"   → 匹配=False, 置信度=0.500, 姓名相似度=1.000
 ✅ 测试3: "张伟" vs "张伟国" → 匹配=False, 置信度=0.000, 姓名相似度=0.000
 ✅ 测试4: "John Smith" vs "John Smithson" → 匹配=False, 置信度=0.720
 ```
 
 **预期影响**:
-- ✅ 彻底消除部分匹配错误 (如 "林挺" 匹配 "林正挺")
+- ✅ 彻底消除部分匹配错误 (如 2字名匹配 3字名)
 - ✅ 误报率从 ~20-30% 降低至 <5%
 - ✅ 只保留真正的同名同姓匹配
 
@@ -194,12 +194,12 @@ content_crawler = SocialContentCrawler(timeout=10.0, max_posts=10)  # 可调整�
 ### 修复前的问题
 ```json
 {
-  "name": "林挺",
+  "name": "候选人A",
   "social_presence": [
     {
       "platform": "知乎",
-      "url": "https://www.zhihu.com/people/lin-zheng-ting",
-      "title": "林正挺的个人主页",  // ❌ 错误匹配：不同的人
+      "url": "https://www.zhihu.com/people/wrong-person",
+      "title": "其他人的个人主页",  // ❌ 错误匹配：不同的人
       "confidence": 0.62
     }
   ]
@@ -209,12 +209,12 @@ content_crawler = SocialContentCrawler(timeout=10.0, max_posts=10)  # 可调整�
 ### 修复后的效果
 ```json
 {
-  "name": "林挺",
+  "name": "候选人A",
   "social_presence": [
     {
       "platform": "知乎",
-      "url": "https://www.zhihu.com/people/lin-ting",
-      "title": "林挺的个人主页",  // ✅ 正确匹配
+      "url": "https://www.zhihu.com/people/candidate-a",
+      "title": "候选人A的个人主页",  // ✅ 正确匹配
       "disambiguation": {
         "confidence": 0.95,
         "explanation": "Name exact match",
