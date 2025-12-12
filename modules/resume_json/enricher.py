@@ -35,14 +35,28 @@ def _best_result(results: List[Dict[str, Any]], title: str) -> Dict[str, Any]:
 
 
 def _extract_date(text: str) -> str:
+    """Extract date from text using multiple patterns."""
     s = text or ""
-    m = re.search(r"(20\d{2}-\d{1,2}-\d{1,2})", s)
+    # Priority 1: YYYY-MM-DD or YYYY/MM/DD
+    m = re.search(r"((?:19|20)\d{2}[-/]\d{1,2}[-/]\d{1,2})", s)
     if m:
         return m.group(1)
-    m = re.search(r"(20\d{2}/\d{1,2}/\d{1,2})", s)
+    # Priority 2: Chinese date format (2024年12月)
+    m = re.search(r"((?:19|20)\d{2})年(\d{1,2})月(?:(\d{1,2})日)?", s)
     if m:
-        return m.group(1)
-    m = re.search(r"(20\d{2})", s)
+        year = m.group(1)
+        month = m.group(2).zfill(2)
+        day = m.group(3).zfill(2) if m.group(3) else "01"
+        return f"{year}-{month}-{day}"
+    # Priority 3: English month format (Dec 2024, December 2024)
+    m = re.search(r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+((?:19|20)\d{2})", s, re.I)
+    if m:
+        month_map = {"Jan":"01","Feb":"02","Mar":"03","Apr":"04","May":"05","Jun":"06",
+                     "Jul":"07","Aug":"08","Sep":"09","Oct":"10","Nov":"11","Dec":"12"}
+        month = month_map.get(m.group(1)[:3].capitalize(), "01")
+        return f"{m.group(2)}-{month}"
+    # Priority 4: Year only (19XX or 20XX)
+    m = re.search(r"((?:19|20)\d{2})", s)
     if m:
         return m.group(1)
     return ""
@@ -61,40 +75,58 @@ class ResumeJSONEnricher:
         pubs = data.get("publications") or []
         if not isinstance(pubs, list):
             return data
-        def task(p: Dict[str, Any]) -> Dict[str, Any]:
-            title = p.get("title") or ""
-            if not title:
-                return p
-            print(f"[富化-论文] 搜索: {title}")
-            res = self.search.search(title, max_results=5, engines=["tavily", "bocha"]) or []
-            best = _best_result(res, title)
-            url = best.get("url") or ""
-            abstract = self._build_abstract(best, res)
-            date = _extract_date(abstract)
-            out = dict(p)
-            out["url"] = url
-            out["abstract"] = abstract
-            if date:
-                out["date"] = date
-            print(f"[富化-论文输出] url={url} date={date} 摘要预览={abstract[:400]}")
-            if abstract:
-                summ = self._summarize_text(abstract)
-                out["summary"] = summ
-            srcs = [r.get("url") for r in res if r.get("url")][:5]
-            evid = [{"url": r.get("url"), "snippet": r.get("content") or ""} for r in res[:5]]
-            if srcs:
-                out["sources"] = srcs
-            if evid:
-                out["evidence"] = evid
-            return out
+        
+        # Input validation: limit publication count
+        MAX_PUBS = 50
+        try:
+            import os as _os
+            MAX_PUBS = int(_os.getenv("MAX_ENRICH_PUBS", "50"))
+        except Exception:
+            pass
+        if len(pubs) > MAX_PUBS:
+            print(f"[富化-论文警告] 论文数量 {len(pubs)} 超过限制 {MAX_PUBS}，仅处理前 {MAX_PUBS} 条")
+            pubs = pubs[:MAX_PUBS]
+        
+        def safe_task(p: Dict[str, Any]) -> Dict[str, Any]:
+            """Wrapper with exception handling to prevent thread pool failures."""
+            try:
+                title = p.get("title") or ""
+                if not title:
+                    return p
+                print(f"[富化-论文] 搜索: {title}")
+                res = self.search.search(title, max_results=5, engines=["tavily", "bocha"]) or []
+                best = _best_result(res, title)
+                url = best.get("url") or ""
+                abstract = self._build_abstract(best, res)
+                date = _extract_date(abstract)
+                out = dict(p)
+                out["url"] = url
+                out["abstract"] = abstract
+                if date:
+                    out["date"] = date
+                print(f"[富化-论文输出] url={url} date={date} 摘要预览={abstract[:400]}")
+                if abstract:
+                    summ = self._summarize_text(abstract)
+                    out["summary"] = summ
+                srcs = [r.get("url") for r in res if r.get("url")][:5]
+                evid = [{"url": r.get("url"), "snippet": r.get("content") or ""} for r in res[:5]]
+                if srcs:
+                    out["sources"] = srcs
+                if evid:
+                    out["evidence"] = evid
+                return out
+            except Exception as e:
+                print(f"[富化-论文错误] {p.get('title', '')}: {e}")
+                return p  # Return original data on failure
+        
         max_workers = 8
         try:
             import os as _os
-            max_workers = int(_os.getenv("ENRICH_MAX_WORKERS", "8"))
+            max_workers = min(16, int(_os.getenv("ENRICH_MAX_WORKERS", "8")))  # Cap at 16
         except Exception:
             pass
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
-            results = list(ex.map(task, pubs))
+            results = list(ex.map(safe_task, pubs))
         data["publications"] = results
         return data
 
@@ -103,33 +135,40 @@ class ResumeJSONEnricher:
         awards = data.get("awards") or []
         if not isinstance(awards, list):
             return data
-        def task(a: Dict[str, Any]) -> Dict[str, Any]:
-            name = a.get("name") or ""
-            if not name:
-                return a
-            print(f"[富化-奖项] 搜索: {name}")
-            res = self.search.search(name, max_results=3, engines=["tavily", "bocha"]) or []
-            best = res[0] if res else {}
-            intro_src = best.get("content") or ""
-            intro = self._summarize_award(name, intro_src)
-            out = dict(a)
-            out["intro"] = intro
-            print(f"[富化-奖项输出] {name} -> {intro}")
-            srcs = [r.get("url") for r in res if r.get("url")][:5]
-            evid = [{"url": r.get("url"), "snippet": r.get("content") or ""} for r in res[:5]]
-            if srcs:
-                out["sources"] = srcs
-            if evid:
-                out["evidence"] = evid
-            return out
+        
+        def safe_task(a: Dict[str, Any]) -> Dict[str, Any]:
+            """Wrapper with exception handling to prevent thread pool failures."""
+            try:
+                name = a.get("name") or ""
+                if not name:
+                    return a
+                print(f"[富化-奖项] 搜索: {name}")
+                res = self.search.search(name, max_results=3, engines=["tavily", "bocha"]) or []
+                best = res[0] if res else {}
+                intro_src = best.get("content") or ""
+                intro = self._summarize_award(name, intro_src)
+                out = dict(a)
+                out["intro"] = intro
+                print(f"[富化-奖项输出] {name} -> {intro}")
+                srcs = [r.get("url") for r in res if r.get("url")][:5]
+                evid = [{"url": r.get("url"), "snippet": r.get("content") or ""} for r in res[:5]]
+                if srcs:
+                    out["sources"] = srcs
+                if evid:
+                    out["evidence"] = evid
+                return out
+            except Exception as e:
+                print(f"[富化-奖项错误] {a.get('name', '')}: {e}")
+                return a  # Return original data on failure
+        
         max_workers = 8
         try:
             import os as _os
-            max_workers = int(_os.getenv("ENRICH_MAX_WORKERS", "8"))
+            max_workers = min(16, int(_os.getenv("ENRICH_MAX_WORKERS", "8")))  # Cap at 16
         except Exception:
             pass
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
-            results = list(ex.map(task, awards))
+            results = list(ex.map(safe_task, awards))
         data["awards"] = results
         return data
 
@@ -233,10 +272,10 @@ class ResumeJSONEnricher:
         if not url:
             return None
         try:
-            r = requests.get(url, timeout=10)
-            if not r.ok:
-                return None
-            text = r.text or ""
+            with requests.get(url, timeout=10, stream=False) as r:
+                if not r.ok:
+                    return None
+                text = r.text or ""
         except Exception:
             return None
         if "arxiv.org" in url:
@@ -287,13 +326,23 @@ class ResumeJSONEnricher:
         for q in queries:
             rs = self.search.search(q, max_results=5, engines=["tavily", "bocha"]) or []
             results.extend(rs)
+        def _normalize_url(url: str) -> str:
+            """Normalize URL for deduplication."""
+            u = url.strip().rstrip('/')
+            u = u.replace('http://', 'https://')
+            # Remove common tracking parameters
+            u = re.sub(r'[?&](utm_[^&]+|ref=[^&]+|source=[^&]+)', '', u)
+            return u.lower()
+        
         seen = set()
         merged = []
         for r in results:
             u = r.get("url") or ""
-            if u and u not in seen:
-                seen.add(u)
-                merged.append(r)
+            if u:
+                norm_url = _normalize_url(u)
+                if norm_url not in seen:
+                    seen.add(norm_url)
+                    merged.append(r)
         context = "\n\n".join([f"来源: {r.get('url','')}\n内容: {r.get('content','')}" for r in merged[:10]])
         msgs = [
             {"role": "system", "content": "你是一名资深评审。请基于提供的公开资料，给出中文综合评价（300-500字），客观、中立，强调学术水平、荣誉与潜力，避免夸张与臆测。"},

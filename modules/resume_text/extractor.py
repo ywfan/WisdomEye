@@ -56,11 +56,20 @@ def _docx_to_text(path: str) -> str:
 
 
 def _bytes_to_text(path: str) -> str:
-    """Read bytes and decode as UTF-8 (ignore errors)."""
+    """Read bytes and decode using multiple encoding attempts."""
     try:
         b = Path(path).read_bytes()
+        # Try common encodings in order
+        for encoding in ['utf-8', 'gbk', 'gb2312', 'gb18030', 'big5', 'latin-1']:
+            try:
+                return b.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        # All encodings failed, fallback to utf-8 with ignore
+        print(f"[编码警告] {path} 所有编码尝试失败，降级为 utf-8 ignore 模式")
         return b.decode("utf-8", errors="ignore")
-    except Exception:
+    except Exception as e:
+        print(f"[读取错误] {path}: {e}")
         return ""
 
 
