@@ -340,7 +340,7 @@ class ResumeJSONEnricher:
         data["social_influence"] = {"summary": "", "signals": inf_signals[:5]}
         return data
 
-    def _classify_social_url(self, url: str) -> (str, str):
+    def _classify_social_url(self, url: str) -> tuple[str, str]:
         """Classify social URL into platform and item kind."""
         u = url or ""
         plat = ""
@@ -378,7 +378,7 @@ class ResumeJSONEnricher:
             elif "/question/" in u or "/zhuanlan/" in u:
                 kind = "article"
         elif ("twitter.com" in u) or ("x.com" in u):
-            plat = "Twitter"
+            plat = "X (Twitter)"
             if "/status/" in u:
                 kind = "post"
         elif ("medium.com" in u) or ("dev.to" in u) or ("/blog" in u):
@@ -386,29 +386,37 @@ class ResumeJSONEnricher:
             kind = "article"
         return plat, kind
 
-    def _filter_social_items(self, name: str, education: List[Dict[str, Any]], items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Filter likely self-related social items using heuristics and optional LLM."""
+    def _filter_social_items(self, name: str, education: List[Dict[str, Any]], items: List[Dict[str, Any]], custom_neg_keywords: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """Filter likely self-related social items using heuristics and optional LLM.
+        
+        Args:
+            name: Candidate name
+            education: List of education entries
+            items: Social media items to filter
+            custom_neg_keywords: Optional list of negative keywords to exclude specific profiles
+        
+        Returns:
+            Filtered list of social items
+        """
         nm = (name or "").strip()
         schools = [str((e or {}).get("school", "")) for e in (education or [])]
-        # additional candidate signals
+        
         def _signals() -> Dict[str, List[str]]:
+            """Build signal keywords from education background."""
             sig = {
-                "pos": [
-                    "xjtu", "xi'an jiaotong", "西安交通大学", "西安交大",
-                    "stu.xjtu.edu.cn", "xjtu.edu.cn",
-                    "航天", "航空", "流体力学", "高超声速", "hypersonic",
-                    "cfd", "gas-kinetic", "non-equilibrium",
-                ],
-                "tech": ["c++", "openmp", "tecplot", "matlab", "python"],
-                "neg": ["诺贝尔", "作家", "小说", "文学", "法籍", "灵山", "八月雪", "现代派", "剧作", "画家", "导演"],
+                "pos": [],  # Positive signals from education/background
+                "tech": ["python", "c++", "java", "javascript", "machine learning", "deep learning", 
+                         "ai", "data science", "algorithm", "software", "engineering"],  # General tech keywords
+                "neg": custom_neg_keywords or [],  # User-provided negative keywords
             }
+            # Add school-related keywords
             for s in schools:
                 if s:
                     sig["pos"].append(s.lower())
-            # english name variants
+            # Add name variations (simple approach)
             if nm:
-                en1 = "xingjian gao"; en2 = "gao xingjian"
-                sig["pos"].extend([en1, en2])
+                # Only add exact name, avoid hardcoding specific person's variants
+                sig["pos"].append(nm.lower())
             return sig
         sig = _signals()
         def heur(it: Dict[str, Any]) -> bool:
