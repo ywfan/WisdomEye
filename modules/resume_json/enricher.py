@@ -401,11 +401,15 @@ class ResumeJSONEnricher:
         
         presence = self.social.normalize(items, platform="mixed")
         data["social_presence"] = presence
-        inf_signals = []
-        for it in presence:
-            if it.get("topics"):
-                inf_signals.append(it.get("topics"))
-        data["social_influence"] = {"summary": "", "signals": inf_signals[:5]}
+        
+        # Generate comprehensive social analysis and persona profile
+        social_analysis = self._generate_comprehensive_social_analysis(
+            candidate_name=name,
+            social_presence=presence,
+            resume_data=data
+        )
+        data["social_influence"] = social_analysis
+        
         return data
 
     def _classify_social_url(self, url: str) -> tuple[str, str]:
@@ -766,6 +770,383 @@ class ResumeJSONEnricher:
         engagement_str = "高" if total_engagement > 1000 else "中" if total_engagement > 100 else "一般"
         
         return f"该{platform}账号发布内容以{sentiment_str}为主，主要涉及{topics_str}等主题，技术深度为{depth_str}，社区影响力{engagement_str}。"
+    
+    def _generate_comprehensive_social_analysis(
+        self,
+        candidate_name: str,
+        social_presence: List[Dict[str, Any]],
+        resume_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Generate comprehensive social media analysis with persona profiling.
+        
+        This replaces the shallow "signals" list with deep insights including:
+        - Multi-platform activity summary
+        - Content quality assessment
+        - Influence and reach metrics
+        - Persona profile (professional identity, expertise areas, engagement style)
+        - Key themes and focus areas
+        - Community standing
+        - Comprehensive synthesis using LLM
+        
+        Args:
+            candidate_name: Candidate's name
+            social_presence: List of social media profiles with deep_analysis
+            resume_data: Full resume data for context
+            
+        Returns:
+            Comprehensive social influence analysis
+        """
+        # Check if comprehensive analysis is enabled
+        use_comprehensive = True
+        try:
+            import os as _os
+            use_comprehensive = _os.getenv("FEATURE_COMPREHENSIVE_SOCIAL_ANALYSIS", "1") == "1"
+        except Exception:
+            use_comprehensive = True
+        
+        # Fallback to simple signals if disabled
+        if not use_comprehensive:
+            inf_signals = []
+            for it in social_presence:
+                if it.get("topics"):
+                    inf_signals.append(it.get("topics"))
+            return {"summary": "", "signals": inf_signals[:5]}
+        
+        # Aggregate metrics across all platforms
+        total_platforms = len(social_presence)
+        platforms_with_deep_analysis = sum(1 for p in social_presence if p.get("deep_analysis"))
+        
+        # Collect all deep analysis data
+        all_topics = []
+        all_keywords = []
+        all_sentiments = []
+        total_engagement = 0
+        technical_depths = []
+        platform_summaries = []
+        
+        for profile in social_presence:
+            platform = profile.get("platform", "Unknown")
+            deep = profile.get("deep_analysis")
+            
+            if deep:
+                # Aggregate topics
+                for topic_entry in deep.get("top_topics", []):
+                    all_topics.append({
+                        "topic": topic_entry.get("topic"),
+                        "count": topic_entry.get("count", 0),
+                        "platform": platform
+                    })
+                
+                # Aggregate keywords
+                for kw_entry in deep.get("top_keywords", []):
+                    all_keywords.append({
+                        "keyword": kw_entry.get("keyword"),
+                        "count": kw_entry.get("count", 0),
+                        "platform": platform
+                    })
+                
+                # Sentiment
+                sentiment_dist = deep.get("sentiment_distribution", {})
+                all_sentiments.append(sentiment_dist)
+                
+                # Engagement
+                total_engagement += deep.get("total_engagement", 0)
+                
+                # Technical depth
+                tech_depth = deep.get("technical_depth", "medium")
+                technical_depths.append(tech_depth)
+                
+                # Platform summary
+                platform_summaries.append({
+                    "platform": platform,
+                    "summary": deep.get("analysis_summary", ""),
+                    "posts_analyzed": deep.get("posts_analyzed", 0),
+                    "engagement": deep.get("total_engagement", 0)
+                })
+        
+        # Calculate aggregate sentiment
+        avg_sentiment = {
+            "positive": sum(s.get("positive", 0) for s in all_sentiments) / len(all_sentiments) if all_sentiments else 0,
+            "neutral": sum(s.get("neutral", 0) for s in all_sentiments) / len(all_sentiments) if all_sentiments else 0,
+            "negative": sum(s.get("negative", 0) for s in all_sentiments) / len(all_sentiments) if all_sentiments else 0
+        }
+        
+        # Get most common topics (cross-platform)
+        topic_aggregation = {}
+        for t in all_topics:
+            topic_name = t["topic"]
+            topic_aggregation[topic_name] = topic_aggregation.get(topic_name, 0) + t["count"]
+        top_topics_overall = sorted(topic_aggregation.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        # Get most common keywords
+        keyword_aggregation = {}
+        for k in all_keywords:
+            kw_name = k["keyword"]
+            keyword_aggregation[kw_name] = keyword_aggregation.get(kw_name, 0) + k["count"]
+        top_keywords_overall = sorted(keyword_aggregation.items(), key=lambda x: x[1], reverse=True)[:15]
+        
+        # Calculate overall technical depth
+        depth_map = {"shallow": 1, "medium": 2, "deep": 3}
+        avg_depth_score = sum(depth_map.get(d, 2) for d in technical_depths) / len(technical_depths) if technical_depths else 2
+        overall_technical_depth = "shallow" if avg_depth_score < 1.5 else "medium" if avg_depth_score < 2.5 else "deep"
+        
+        # Generate persona profile using LLM
+        persona_profile = self._generate_persona_profile(
+            candidate_name=candidate_name,
+            resume_data=resume_data,
+            social_data={
+                "platforms": [p.get("platform") for p in social_presence],
+                "top_topics": top_topics_overall[:5],
+                "top_keywords": top_keywords_overall[:10],
+                "sentiment": avg_sentiment,
+                "technical_depth": overall_technical_depth,
+                "total_engagement": total_engagement,
+                "platform_summaries": platform_summaries
+            }
+        )
+        
+        # Generate comprehensive synthesis using LLM
+        comprehensive_summary = self._generate_social_synthesis(
+            candidate_name=candidate_name,
+            resume_data=resume_data,
+            persona_profile=persona_profile,
+            social_metrics={
+                "total_platforms": total_platforms,
+                "platforms_analyzed": platforms_with_deep_analysis,
+                "top_topics": top_topics_overall[:5],
+                "sentiment": avg_sentiment,
+                "technical_depth": overall_technical_depth,
+                "total_engagement": total_engagement
+            },
+            platform_summaries=platform_summaries
+        )
+        
+        # Build comprehensive result
+        return {
+            "summary": comprehensive_summary,
+            "persona_profile": persona_profile,
+            "metrics": {
+                "total_platforms": total_platforms,
+                "platforms_with_analysis": platforms_with_deep_analysis,
+                "total_engagement": round(total_engagement, 2),
+                "avg_sentiment": {k: round(v, 3) for k, v in avg_sentiment.items()},
+                "technical_depth": overall_technical_depth
+            },
+            "key_topics": [{"topic": t, "frequency": c} for t, c in top_topics_overall[:10]],
+            "key_keywords": [{"keyword": k, "frequency": c} for k, c in top_keywords_overall[:15]],
+            "platform_insights": platform_summaries
+        }
+    
+    def _generate_persona_profile(
+        self,
+        candidate_name: str,
+        resume_data: Dict[str, Any],
+        social_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Generate a comprehensive persona profile based on social media presence.
+        
+        Uses LLM to synthesize:
+        - Professional identity
+        - Expertise areas
+        - Engagement style
+        - Community standing
+        - Thought leadership indicators
+        """
+        # Build context for LLM
+        education = resume_data.get("education", [])
+        work_exp = resume_data.get("work_experience", [])
+        
+        edu_str = "; ".join([
+            f"{e.get('degree', '')} from {e.get('school', '')}" 
+            for e in education[:2] if isinstance(e, dict)
+        ]) if education else "N/A"
+        
+        work_str = "; ".join([
+            f"{w.get('title', '')} at {w.get('company', '')}"
+            for w in work_exp[:2] if isinstance(w, dict)
+        ]) if work_exp else "N/A"
+        
+        platforms = ", ".join(social_data.get("platforms", []))
+        topics = ", ".join([t[0] for t in social_data.get("top_topics", [])[:5]])
+        keywords = ", ".join([k[0] for k in social_data.get("top_keywords", [])[:8]])
+        
+        sentiment = social_data.get("sentiment", {})
+        sentiment_str = f"积极({sentiment.get('positive', 0):.1%}), 中立({sentiment.get('neutral', 0):.1%}), 消极({sentiment.get('negative', 0):.1%})"
+        
+        tech_depth = social_data.get("technical_depth", "medium")
+        tech_depth_cn = {"shallow": "入门级", "medium": "中等深度", "deep": "深度技术"}[tech_depth]
+        
+        engagement = social_data.get("total_engagement", 0)
+        engagement_str = "高" if engagement > 1000 else "中" if engagement > 100 else "一般"
+        
+        prompt = f"""# 角色
+你是一名资深的人才评估专家，擅长通过社交媒体数据分析候选人的专业画像。
+
+# 任务
+基于以下候选人的履历和社交媒体数据，生成一份**结构化的人物画像**。
+
+# 输入信息
+## 候选人基本信息
+- 姓名: {candidate_name}
+- 教育背景: {edu_str}
+- 工作经历: {work_str}
+
+## 社交媒体数据
+- 活跃平台: {platforms}
+- 主要讨论主题: {topics}
+- 高频关键词: {keywords}
+- 内容情感倾向: {sentiment_str}
+- 技术深度: {tech_depth_cn}
+- 社区影响力: {engagement_str}
+
+# 输出要求
+请以**JSON格式**输出，包含以下字段（每个字段用1-2句话，50-80字）：
+
+1. **professional_identity** (专业身份): 候选人的核心专业定位和角色
+2. **expertise_areas** (专业领域): 主要技术专长和研究方向（数组，3-5个）
+3. **engagement_style** (参与风格): 在社交媒体上的互动和内容分享风格
+4. **community_standing** (社区地位): 在技术社区中的影响力和认可度
+5. **thought_leadership** (思想领导力): 是否展现出行业洞见和引领能力
+6. **key_strengths** (核心优势): 从社交媒体表现看出的关键优势（数组，3-5个）
+
+# 重要约束
+- 严格基于提供的数据，不要编造
+- 如果信息不足，使用"数据有限"或"待观察"表述
+- 输出必须是合法的JSON格式
+- 每个字段保持简洁专业
+
+请输出JSON："""
+
+        try:
+            msgs = [
+                {"role": "system", "content": "你是一名专业的人才评估专家，擅长生成结构化的候选人画像。输出必须是合法的JSON格式。"},
+                {"role": "user", "content": prompt}
+            ]
+            response = self.llm.chat(msgs)
+            
+            # Try to parse JSON
+            import json
+            response_clean = response.strip()
+            if response_clean.startswith("```json"):
+                response_clean = response_clean[7:]
+            if response_clean.endswith("```"):
+                response_clean = response_clean[:-3]
+            response_clean = response_clean.strip()
+            
+            persona = json.loads(response_clean)
+            return persona
+            
+        except Exception as e:
+            print(f"[人物画像生成-错误] {e}")
+            # Fallback to simple structure
+            return {
+                "professional_identity": f"活跃于{platforms}等平台的技术从业者",
+                "expertise_areas": [t[0] for t in social_data.get("top_topics", [])[:3]],
+                "engagement_style": f"内容情感以{sentiment_str}为主",
+                "community_standing": f"社区影响力{engagement_str}",
+                "thought_leadership": "数据有限，待进一步观察",
+                "key_strengths": [k[0] for k in social_data.get("top_keywords", [])[:3]]
+            }
+    
+    def _generate_social_synthesis(
+        self,
+        candidate_name: str,
+        resume_data: Dict[str, Any],
+        persona_profile: Dict[str, Any],
+        social_metrics: Dict[str, Any],
+        platform_summaries: List[Dict[str, Any]]
+    ) -> str:
+        """
+        Generate a comprehensive synthesis of social media presence using LLM.
+        
+        This creates a 200-300 word narrative that ties together:
+        - Resume background
+        - Social media activity
+        - Persona insights
+        - Community influence
+        """
+        # Build context
+        platforms = [p["platform"] for p in platform_summaries]
+        platforms_str = "、".join(platforms)
+        
+        topics = [t[0] for t in social_metrics.get("top_topics", [])[:5]]
+        topics_str = "、".join(topics) if topics else "多个技术领域"
+        
+        sentiment = social_metrics.get("sentiment", {})
+        sentiment_main = "积极" if sentiment.get("positive", 0) > 0.5 else "中立" if sentiment.get("neutral", 0) > 0.4 else "多样化"
+        
+        tech_depth = social_metrics.get("technical_depth", "medium")
+        tech_depth_cn = {"shallow": "入门级", "medium": "中等深度", "deep": "深度技术"}[tech_depth]
+        
+        engagement = social_metrics.get("total_engagement", 0)
+        
+        # Platform-specific insights
+        platform_insights_str = "\n".join([
+            f"- {p['platform']}: {p.get('summary', '暂无详情')}"
+            for p in platform_summaries[:3]
+        ])
+        
+        # Persona highlights
+        prof_id = persona_profile.get("professional_identity", "")
+        expertise = ", ".join(persona_profile.get("expertise_areas", [])[:3])
+        thought_lead = persona_profile.get("thought_leadership", "")
+        
+        prompt = f"""# 角色
+你是一名资深的人才评估报告撰写专家，擅长将碎片化的社交媒体数据综合成连贯、深刻的人物评估。
+
+# 任务
+基于候选人的社交媒体数据和人物画像，撰写一段**200-300字的综合评估**。
+
+# 输入信息
+## 候选人
+- 姓名: {candidate_name}
+
+## 社交媒体概况
+- 活跃平台: {platforms_str}
+- 主要讨论领域: {topics_str}
+- 内容情感基调: {sentiment_main}
+- 技术深度: {tech_depth_cn}
+- 总互动量: {engagement:.0f}
+
+## 各平台表现
+{platform_insights_str}
+
+## 人物画像
+- 专业身份: {prof_id}
+- 专长领域: {expertise}
+- 思想领导力: {thought_lead}
+
+# 输出要求
+1. **篇幅**: 严格控制在200-300字之间
+2. **结构**: 
+   - 第1段(80-100字): 整体社交媒体活跃度和专业定位
+   - 第2段(60-80字): 内容质量和技术深度评估
+   - 第3段(60-80字): 社区影响力和未来潜力
+3. **风格**: 
+   - 客观专业，避免过度夸赞或批评
+   - 数据支撑，每个判断基于具体指标
+   - 洞察深刻，揭示表象背后的专业特质
+4. **禁止**: 
+   - 不要使用"本文"、"作者"、"该候选人"等生硬表述
+   - 直接使用候选人姓名或"其"
+   - 不要编造数据
+
+请直接输出评估文本（纯文本，不要Markdown格式）："""
+
+        try:
+            msgs = [
+                {"role": "system", "content": "你是一名专业的人才评估报告撰写专家。输出简洁、深刻、数据驱动的评估文本。"},
+                {"role": "user", "content": prompt}
+            ]
+            synthesis = self.llm.chat(msgs)
+            return synthesis.strip()
+            
+        except Exception as e:
+            print(f"[社交综合分析-错误] {e}")
+            # Fallback to simple summary
+            return f"{candidate_name}在{platforms_str}等平台保持活跃，主要关注{topics_str}等领域。内容以{sentiment_main}为主，技术深度达到{tech_depth_cn}水平，累计获得{engagement:.0f}互动量，展现出一定的社区影响力。"
 
     def enrich_scholar_metrics(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Attach scholar metrics using enhanced fetcher with active crawling."""
