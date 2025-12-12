@@ -115,13 +115,15 @@ class ResumeJSONFormatter:
         """Parse LLM output robustly: direct, fenced, greedy braces + cleaning."""
         s = (content or "").strip()
         if not s:
+            print("[JSON解析警告] 空内容")
             return {}
+        
         # 1) direct parse
         try:
             obj = json.loads(s)
             return obj if isinstance(obj, dict) else (obj or {})
-        except Exception:
-            pass
+        except json.JSONDecodeError as e:
+            print(f"[JSON解析失败-直接] 行{e.lineno}列{e.colno}: {e.msg}")
 
         # helper: strip code fences
         def _strip_fences(t: str) -> str:
@@ -137,8 +139,8 @@ class ResumeJSONFormatter:
                 candidate = m.group(1).strip()
                 obj = json.loads(candidate)
                 return obj if isinstance(obj, dict) else (obj or {})
-        except Exception:
-            pass
+        except json.JSONDecodeError as e:
+            print(f"[JSON解析失败-代码块] 行{e.lineno}列{e.colno}: {e.msg}")
 
         # 3) greedy braces then clean
         def _between_braces(t: str) -> Optional[str]:
@@ -154,8 +156,9 @@ class ResumeJSONFormatter:
             try:
                 obj = json.loads(candidate)
                 return obj if isinstance(obj, dict) else (obj or {})
-            except Exception:
-                pass
+            except json.JSONDecodeError as e:
+                print(f"[JSON解析失败-大括号提取] 行{e.lineno}列{e.colno}: {e.msg}")
+            
             # cleaning: remove trailing commas, bool/none normalization, single-quote to double-quote
             cleaned = candidate
             try:
@@ -169,20 +172,23 @@ class ResumeJSONFormatter:
                 # string values with single quotes -> double quotes
                 cleaned = re.sub(r":\s*'([^']*)'", r': "\1"', cleaned)
                 obj = json.loads(cleaned)
+                print("[JSON解析成功] 使用清理后的文本")
                 return obj if isinstance(obj, dict) else (obj or {})
-            except Exception:
-                pass
+            except json.JSONDecodeError as e:
+                print(f"[JSON解析失败-清理后] 行{e.lineno}列{e.colno}: {e.msg}")
 
         # 4) last resort: extract any JSON object-like substring via regex non-greedy
         try:
             m2 = re.search(r"\{[\s\S]*?\}", _strip_fences(s))
             if m2:
                 obj = json.loads(m2.group(0))
+                print("[JSON解析成功] 使用非贪婪提取")
                 return obj if isinstance(obj, dict) else (obj or {})
-        except Exception:
-            pass
+        except json.JSONDecodeError as e:
+            print(f"[JSON解析失败-非贪婪] 行{e.lineno}列{e.colno}: {e.msg}")
 
         # log parse failure
+        print(f"[JSON解析失败] 所有方法均失败，返回空对象。预览: {s[:200]}")
         try:
             from pathlib import Path as _P
             root = _P.cwd() / "output" / "logs"
