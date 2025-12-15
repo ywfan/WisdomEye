@@ -23,6 +23,11 @@ from utils.benchmark_data import AcademicBenchmarker, benchmark_researcher
 from utils.journal_quality_db import JournalQualityDatabase, classify_publication_venue
 from utils.risk_assessment import RiskAssessor, assess_candidate_risks
 
+# Phase 2 enhancements: Authorship Analysis, Evidence Chain, Cross-Validation
+from utils.authorship_analyzer import AuthorshipAnalyzer, analyze_authorship
+from utils.evidence_chain import EvidenceChainBuilder, build_evidence_chains_for_evaluation
+from utils.cross_validator import CrossValidator, cross_validate_evaluation
+
 
 def _score(title: str, candidate: Dict[str, Any]) -> int:
     t = (title or "").lower()
@@ -93,6 +98,9 @@ class ResumeJSONEnricher:
         self.benchmarker = AcademicBenchmarker()
         self.journal_db = JournalQualityDatabase()
         self.risk_assessor = RiskAssessor()
+        # Phase 2 enhancements: Initialize authorship analyzer, evidence chain builder, cross-validator
+        self.evidence_builder = EvidenceChainBuilder(llm_client=self.llm)
+        self.cross_validator = CrossValidator()
 
     def enrich_publications(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Search publications, attach URL/abstract/summary and sources/evidence."""
@@ -1541,6 +1549,40 @@ class ResumeJSONEnricher:
               f"(严重: {risk_assessment['summary']['critical_count']}, "
               f"高: {risk_assessment['summary']['high_count']}, "
               f"中: {risk_assessment['summary']['medium_count']})")
+        
+        # Phase 2: Add authorship pattern analysis
+        print("[作者贡献分析] 开始分析作者模式...")
+        candidate_name = data.get("basic_info", {}).get("name", "") or data.get("name", "")
+        if candidate_name:
+            authorship_report = analyze_authorship(candidate_name, data.get("publications", []))
+            final_obj["authorship_analysis"] = authorship_report
+            independence_score = authorship_report.get("metrics", {}).get("independence_score", 0)
+            print(f"[作者贡献分析-完成] 独立性得分: {independence_score:.2f}, "
+                  f"第一作者率: {authorship_report.get('metrics', {}).get('first_author', {}).get('rate', 0):.1%}")
+        
+        # Phase 2: Add evidence chains for multi-dimension evaluation
+        print("[证据链追溯] 开始构建证据链...")
+        enhanced_evaluation = build_evidence_chains_for_evaluation(
+            evaluation_dict=dims,
+            resume_data=data,
+            llm_client=self.llm
+        )
+        final_obj["enhanced_evaluation"] = enhanced_evaluation
+        print(f"[证据链追溯-完成] 为 {len(enhanced_evaluation)} 个维度构建了证据链")
+        
+        # Phase 2: Add academic-social cross-validation
+        print("[交叉验证] 开始学术-社交信号交叉验证...")
+        social_data = data.get("social_influence", {})
+        if social_data:
+            cross_validation = cross_validate_evaluation(
+                academic_evaluation=dims,
+                social_analysis=social_data
+            )
+            final_obj["cross_validation"] = cross_validation
+            consistency = cross_validation.get("consistency_score", 0)
+            inconsistencies = len(cross_validation.get("inconsistencies", []))
+            print(f"[交叉验证-完成] 一致性得分: {consistency:.1%}, 发现矛盾: {inconsistencies} 个")
+        
         out_path = p.parent / "resume_final.json"
         out_path.write_text(json.dumps(final_obj, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"[终评-完成] 生成 {str(out_path)}")
