@@ -28,6 +28,10 @@ from utils.authorship_analyzer import AuthorshipAnalyzer, analyze_authorship
 from utils.evidence_chain import EvidenceChainBuilder, build_evidence_chains_for_evaluation
 from utils.cross_validator import CrossValidator, cross_validate_evaluation
 
+# Phase 3 enhancements: Research Lineage and Productivity Timeline
+from utils.research_lineage import ResearchLineageAnalyzer
+from utils.productivity_timeline import ProductivityTimelineAnalyzer
+
 
 def _score(title: str, candidate: Dict[str, Any]) -> int:
     t = (title or "").lower()
@@ -1582,6 +1586,26 @@ class ResumeJSONEnricher:
             consistency = cross_validation.get("consistency_score", 0)
             inconsistencies = len(cross_validation.get("inconsistencies", []))
             print(f"[交叉验证-完成] 一致性得分: {consistency:.1%}, 发现矛盾: {inconsistencies} 个")
+        
+        # Phase 3: Add research lineage analysis
+        print("[研究脉络分析] 开始分析学术谱系和研究轨迹...")
+        lineage_analyzer = ResearchLineageAnalyzer(llm_client=self.llm)
+        research_lineage = lineage_analyzer.analyze(data)
+        final_obj["research_lineage"] = research_lineage
+        continuity_score = research_lineage.get("continuity_score", 0)
+        coherence = research_lineage.get("coherence_assessment", "Unknown")
+        maturity = research_lineage.get("research_maturity", "Unknown")
+        print(f"[研究脉络分析-完成] 连续性得分: {continuity_score:.2f}, 一致性: {coherence[:30]}..., 成熟度: {maturity[:30]}...")
+        
+        # Phase 3: Add productivity timeline analysis
+        print("[产出时间线分析] 开始分析生产力趋势和时间线...")
+        timeline_analyzer = ProductivityTimelineAnalyzer()
+        productivity_timeline = timeline_analyzer.analyze(data)
+        final_obj["productivity_timeline"] = productivity_timeline
+        productivity_score = productivity_timeline.get("productivity_score", 0)
+        trend = productivity_timeline.get("trend_assessment", "Unknown")
+        recent_trend = productivity_timeline.get("recent_trend", "Unknown")
+        print(f"[产出时间线分析-完成] 生产力得分: {productivity_score:.1f}/10, 整体趋势: {trend[:40]}..., 近期趋势: {recent_trend[:40]}...")
         
         out_path = p.parent / "resume_final.json"
         out_path.write_text(json.dumps(final_obj, ensure_ascii=False, indent=2), encoding="utf-8")
