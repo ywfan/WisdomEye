@@ -81,7 +81,7 @@ class ProductivityTimelineAnalyzer:
             "growth_rate": "Unknown"
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         if not publications:
             return timeline
         
@@ -149,7 +149,7 @@ class ProductivityTimelineAnalyzer:
             "h_index_growth": []
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         if not publications:
             return timeline
         
@@ -216,7 +216,7 @@ class ProductivityTimelineAnalyzer:
             "publication_rhythm": "Unknown"
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         if not publications:
             return patterns
         
@@ -286,7 +286,7 @@ class ProductivityTimelineAnalyzer:
             "annual_quality_metrics": []
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         if not publications:
             return balance
         
@@ -369,7 +369,7 @@ class ProductivityTimelineAnalyzer:
             "venue_quality_trend": "Unknown"
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         if not publications:
             return timeline
         
@@ -424,7 +424,7 @@ class ProductivityTimelineAnalyzer:
             "independence_trend": "Unknown"
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         candidate_name = self._get_candidate_name(data)
         
         if not publications:
@@ -531,7 +531,7 @@ class ProductivityTimelineAnalyzer:
     
     def _calculate_h_index_growth(self, data: Dict[str, Any]) -> List[Dict]:
         """Calculate h-index growth over time (simplified)"""
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         if not publications:
             return []
         

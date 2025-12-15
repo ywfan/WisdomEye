@@ -90,8 +90,8 @@ class ResearchLineageAnalyzer:
             "divergence_topics": []
         }
         
-        education = data.get("Education", [])
-        publications = data.get("Publications", [])
+        education = data.get("education", []) or data.get("Education", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         network = data.get("network_graph", {})
         
         # Extract supervisors from education
@@ -158,7 +158,7 @@ class ResearchLineageAnalyzer:
             "consistency_level": "Unknown"
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         if not publications:
             return trajectory
         
@@ -213,7 +213,7 @@ class ResearchLineageAnalyzer:
             "topic_diversity_trend": "Unknown"
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         if not publications:
             return evolution
         
@@ -262,7 +262,7 @@ class ResearchLineageAnalyzer:
             "independence_trajectory": "Unknown"
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         network = data.get("network_graph", {})
         
         if not publications:
@@ -298,7 +298,7 @@ class ResearchLineageAnalyzer:
             "peak_impact_period": None
         }
         
-        publications = data.get("Publications", [])
+        publications = data.get("publications", []) or data.get("Publications", [])
         metrics = data.get("scholar_metrics", {})
         
         if not publications:
@@ -374,7 +374,7 @@ class ResearchLineageAnalyzer:
     
     def _get_phd_year(self, data: Dict[str, Any]) -> Optional[int]:
         """Get PhD completion year"""
-        education = data.get("Education", [])
+        education = data.get("education", []) or data.get("Education", [])
         for edu in education:
             if not isinstance(edu, dict):
                 continue

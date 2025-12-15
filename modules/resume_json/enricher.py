@@ -1598,23 +1598,39 @@ class ResumeJSONEnricher:
         
         # Phase 3: Add research lineage analysis
         print("[研究脉络分析] 开始分析学术谱系和研究轨迹...")
-        lineage_analyzer = ResearchLineageAnalyzer(llm_client=self.llm)
-        research_lineage = lineage_analyzer.analyze(data)
-        final_obj["research_lineage"] = research_lineage
-        continuity_score = research_lineage.get("continuity_score", 0)
-        coherence = research_lineage.get("coherence_assessment", "Unknown")
-        maturity = research_lineage.get("research_maturity", "Unknown")
-        print(f"[研究脉络分析-完成] 连续性得分: {continuity_score:.2f}, 一致性: {coherence[:30]}..., 成熟度: {maturity[:30]}...")
+        try:
+            lineage_analyzer = ResearchLineageAnalyzer(llm_client=self.llm)
+            research_lineage = lineage_analyzer.analyze(data)
+            if isinstance(research_lineage, dict):
+                final_obj["research_lineage"] = research_lineage
+                continuity_score = research_lineage.get("continuity_score", 0)
+                coherence = research_lineage.get("coherence_assessment", "Unknown")
+                maturity = research_lineage.get("research_maturity", "Unknown")
+                print(f"[研究脉络分析-完成] 连续性得分: {continuity_score:.2f}, 一致性: {coherence[:30]}..., 成熟度: {maturity[:30]}...")
+            else:
+                print(f"[研究脉络分析-错误] 返回类型错误: {type(research_lineage).__name__}, 期望 dict")
+                final_obj["research_lineage"] = {"error": f"Invalid return type: {type(research_lineage).__name__}"}
+        except Exception as e:
+            print(f"[研究脉络分析-错误] {str(e)}")
+            final_obj["research_lineage"] = {"error": str(e)}
         
         # Phase 3: Add productivity timeline analysis
         print("[产出时间线分析] 开始分析生产力趋势和时间线...")
-        timeline_analyzer = ProductivityTimelineAnalyzer()
-        productivity_timeline = timeline_analyzer.analyze(data)
-        final_obj["productivity_timeline"] = productivity_timeline
-        productivity_score = productivity_timeline.get("productivity_score", 0)
-        trend = productivity_timeline.get("trend_assessment", "Unknown")
-        recent_trend = productivity_timeline.get("recent_trend", "Unknown")
-        print(f"[产出时间线分析-完成] 生产力得分: {productivity_score:.1f}/10, 整体趋势: {trend[:40]}..., 近期趋势: {recent_trend[:40]}...")
+        try:
+            timeline_analyzer = ProductivityTimelineAnalyzer()
+            productivity_timeline = timeline_analyzer.analyze(data)
+            if isinstance(productivity_timeline, dict):
+                final_obj["productivity_timeline"] = productivity_timeline
+                productivity_score = productivity_timeline.get("productivity_score", 0)
+                trend = productivity_timeline.get("trend_assessment", "Unknown")
+                recent_trend = productivity_timeline.get("recent_trend", "Unknown")
+                print(f"[产出时间线分析-完成] 生产力得分: {productivity_score:.1f}/10, 整体趋势: {trend[:40]}..., 近期趋势: {recent_trend[:40]}...")
+            else:
+                print(f"[产出时间线分析-错误] 返回类型错误: {type(productivity_timeline).__name__}, 期望 dict")
+                final_obj["productivity_timeline"] = {"error": f"Invalid return type: {type(productivity_timeline).__name__}"}
+        except Exception as e:
+            print(f"[产出时间线分析-错误] {str(e)}")
+            final_obj["productivity_timeline"] = {"error": str(e)}
         
         out_path = p.parent / "resume_final.json"
         out_path.write_text(json.dumps(final_obj, ensure_ascii=False, indent=2), encoding="utf-8")
