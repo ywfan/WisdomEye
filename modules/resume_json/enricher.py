@@ -18,6 +18,11 @@ from infra.scholar_metrics import ScholarMetricsFetcher
 from infra.scholar_metrics_enhanced import AcademicMetricsFetcher
 from infra.social_content_crawler import SocialContentCrawler
 
+# Phase 1 enhancements: Benchmarking, Journal Quality, Risk Assessment
+from utils.benchmark_data import AcademicBenchmarker, benchmark_researcher
+from utils.journal_quality_db import JournalQualityDatabase, classify_publication_venue
+from utils.risk_assessment import RiskAssessor, assess_candidate_risks
+
 
 def _score(title: str, candidate: Dict[str, Any]) -> int:
     t = (title or "").lower()
@@ -84,6 +89,10 @@ class ResumeJSONEnricher:
         self.disambiguator = PersonDisambiguator(min_confidence=0.75)  # Raised from 0.60 to reduce false positives
         # Initialize social content crawler for deep analysis
         self.content_crawler = SocialContentCrawler(timeout=10.0, max_posts=10)
+        # Phase 1 enhancements: Initialize benchmarker, journal quality DB, and risk assessor
+        self.benchmarker = AcademicBenchmarker()
+        self.journal_db = JournalQualityDatabase()
+        self.risk_assessor = RiskAssessor()
 
     def enrich_publications(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Search publications, attach URL/abstract/summary and sources/evidence."""
@@ -129,6 +138,14 @@ class ResumeJSONEnricher:
                     out["sources"] = srcs
                 if evid:
                     out["evidence"] = evid
+                
+                # Phase 1: Add journal quality tagging
+                venue = p.get("journal") or p.get("conference") or ""
+                if venue:
+                    quality_info = self.journal_db.classify_venue(venue)
+                    out["venue_quality"] = quality_info
+                    print(f"[富化-论文质量] {venue}: {quality_info.get('quality_flag', 'Unknown')}")
+                
                 return out
             except Exception as e:
                 print(f"[富化-论文错误] {p.get('title', '')}: {e}")
@@ -1195,6 +1212,13 @@ class ResumeJSONEnricher:
             srcs.append(profile_url)
             data["profile_sources"] = list(dict.fromkeys(srcs))
         
+        # Phase 1: Add academic benchmarking
+        if metrics.get("h_index") and metrics.get("citations_total"):
+            benchmark_result = self._add_academic_benchmark(data, metrics)
+            if benchmark_result:
+                am["benchmark"] = benchmark_result
+                print(f"[学术对标] 完成对标分析: h-index percentile={benchmark_result.get('h_index_analysis', {}).get('percentile', 'N/A')}")
+        
         # Log results
         if any(metrics.values()):
             print(f"[学术指标-成功] h-index={metrics.get('h_index','N/A')}, citations={metrics.get('citations_total','N/A')}")
@@ -1202,6 +1226,78 @@ class ResumeJSONEnricher:
             print(f"[学术指标-警告] 未能获取到 {name} 的学术指标")
         
         return data
+    
+    def _add_academic_benchmark(self, data: Dict[str, Any], metrics: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Add academic benchmarking analysis
+        
+        Args:
+            data: Resume data
+            metrics: Scholar metrics
+            
+        Returns:
+            Benchmark analysis or None if insufficient data
+        """
+        try:
+            # Extract necessary data
+            h_index = metrics.get("h_index", 0)
+            citations = metrics.get("citations_total", 0)
+            
+            if not h_index or not citations:
+                return None
+            
+            # Get publication count
+            pubs = data.get("publications", [])
+            pub_count = len(pubs)
+            
+            # Extract PhD year for career stage calculation
+            phd_year = None
+            education = data.get("education", [])
+            for edu in education:
+                degree = edu.get("degree", "")
+                if "PhD" in degree or "博士" in degree:
+                    year_str = edu.get("end_date", "") or edu.get("year", "")
+                    match = re.search(r"(19|20)\d{2}", str(year_str))
+                    if match:
+                        phd_year = int(match.group(0))
+                        break
+            
+            if not phd_year:
+                print("[学术对标-警告] 无法确定PhD毕业年份，使用默认career stage")
+                years_since_phd = 5  # Default to mid-career
+            else:
+                years_since_phd = self.risk_assessor.current_year - phd_year
+            
+            # Determine research field
+            # Try to infer from education or use a default
+            field = "Computational Mathematics"  # Default
+            for edu in education:
+                major = edu.get("major", "")
+                if major:
+                    # Simple field mapping
+                    if "计算机" in major or "Computer" in major:
+                        field = "Computer Science"
+                    elif "数学" in major or "Math" in major:
+                        if "应用" in major or "Applied" in major:
+                            field = "Applied Mathematics"
+                        else:
+                            field = "Computational Mathematics"
+                    break
+            
+            # Perform benchmarking
+            benchmark_result = self.benchmarker.benchmark_candidate(
+                h_index=int(h_index),
+                citations=int(citations),
+                pub_count=pub_count,
+                field=field,
+                years_since_phd=years_since_phd
+            )
+            
+            return benchmark_result
+            
+        except Exception as e:
+            print(f"[学术对标-错误] {e}")
+            return None
 
     def enrich_network_graph(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Build simple network graph from supervisors and coauthors."""
@@ -1436,6 +1532,15 @@ class ResumeJSONEnricher:
         final_obj["multi_dimension_evaluation"] = dims
         final_obj["multi_dimension_scores"] = self.multi_dimension_scores(dims)
         final_obj["overall_summary"] = self.overall_summary(data)
+        
+        # Phase 1: Add comprehensive risk assessment
+        print("[风险评估] 开始全面风险分析...")
+        risk_assessment = self.risk_assessor.assess_all_risks(data)
+        final_obj["risk_assessment"] = risk_assessment
+        print(f"[风险评估-完成] 识别风险: {risk_assessment['summary']['total_risks']} 个 "
+              f"(严重: {risk_assessment['summary']['critical_count']}, "
+              f"高: {risk_assessment['summary']['high_count']}, "
+              f"中: {risk_assessment['summary']['medium_count']})")
         out_path = p.parent / "resume_final.json"
         out_path.write_text(json.dumps(final_obj, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"[终评-完成] 生成 {str(out_path)}")
