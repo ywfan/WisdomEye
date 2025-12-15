@@ -302,6 +302,14 @@ def render_html(final_json_path: str) -> str:
     skills = data.get("skills") or {}
     honors = data.get("honors") or []
     others = data.get("others") or ""
+    
+    # Phase 1-3 enhancements
+    risk_assessment = data.get("risk_assessment") or {}
+    authorship_analysis = data.get("authorship_analysis") or {}
+    enhanced_evaluation = data.get("enhanced_evaluation") or {}
+    cross_validation = data.get("cross_validation") or {}
+    research_lineage = data.get("research_lineage") or {}
+    productivity_timeline = data.get("productivity_timeline") or {}
 
     # Build basic info HTML
     bi_html = "".join([
@@ -541,6 +549,305 @@ def render_html(final_json_path: str) -> str:
 
     # Others
     others_html = f"<div class='card'><div class='content'>{_esc(others)}</div></div>" if others else "<div class='card empty-card'><div class='content'>暂无</div></div>"
+
+    # ========== Phase 1: Risk Assessment HTML ==========
+    risk_html = ""
+    if risk_assessment:
+        summary = risk_assessment.get("summary", {})
+        categories = risk_assessment.get("risk_categories", {})
+        
+        # Summary card
+        risk_html += "<div class='card risk-summary-card'>"
+        risk_html += "<div class='card-title'>🚨 风险总览</div>"
+        risk_html += f"<div class='risk-stats'>"
+        risk_html += f"<div class='risk-stat critical'><span class='num'>{summary.get('critical_count', 0)}</span><span class='label'>严重</span></div>"
+        risk_html += f"<div class='risk-stat high'><span class='num'>{summary.get('high_count', 0)}</span><span class='label'>高风险</span></div>"
+        risk_html += f"<div class='risk-stat medium'><span class='num'>{summary.get('medium_count', 0)}</span><span class='label'>中风险</span></div>"
+        risk_html += f"<div class='risk-stat low'><span class='num'>{summary.get('low_count', 0)}</span><span class='label'>低风险</span></div>"
+        risk_html += "</div></div>"
+        
+        # Risk category cards
+        for cat_name, cat_data in categories.items():
+            if isinstance(cat_data, dict) and cat_data.get("risks"):
+                risk_html += f"<div class='card risk-category-card'>"
+                risk_html += f"<div class='card-title'>{_esc(cat_name)}</div>"
+                for risk in cat_data.get("risks", [])[:5]:  # Show top 5
+                    severity = risk.get("severity", "LOW")
+                    desc = risk.get("description", "")
+                    evidence = risk.get("evidence", "")
+                    
+                    severity_class = severity.lower()
+                    severity_badge = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🟢"}.get(severity, "⚪")
+                    
+                    risk_html += f"<div class='risk-item {severity_class}'>"
+                    risk_html += f"<div class='risk-header'><span class='badge'>{severity_badge} {severity}</span></div>"
+                    risk_html += f"<div class='risk-desc'>{_esc(desc)}</div>"
+                    if evidence:
+                        risk_html += f"<div class='risk-evidence'>📊 {_esc(evidence)}</div>"
+                    risk_html += "</div>"
+                risk_html += "</div>"
+    
+    # ========== Phase 2: Authorship Analysis HTML ==========
+    authorship_html = ""
+    if authorship_analysis:
+        metrics = authorship_analysis.get("metrics", {})
+        patterns = authorship_analysis.get("patterns", {})
+        
+        # Metrics card
+        authorship_html += "<div class='card authorship-metrics-card'>"
+        authorship_html += "<div class='card-title'>📊 作者贡献指标</div>"
+        authorship_html += f"<div class='metric-row'>"
+        authorship_html += f"<div class='metric-item'><div class='label'>独立性得分</div><div class='value score-{int(metrics.get('independence_score', 0) * 10)}'>{metrics.get('independence_score', 0):.2f}</div></div>"
+        
+        first_author = metrics.get("first_author", {})
+        authorship_html += f"<div class='metric-item'><div class='label'>第一作者</div><div class='value'>{first_author.get('count', 0)} ({first_author.get('rate', 0):.1%})</div></div>"
+        
+        corresponding = metrics.get("corresponding_author", {})
+        authorship_html += f"<div class='metric-item'><div class='label'>通讯作者</div><div class='value'>{corresponding.get('count', 0)} ({corresponding.get('rate', 0):.1%})</div></div>"
+        
+        solo = metrics.get("solo_authored", {})
+        authorship_html += f"<div class='metric-item'><div class='label'>独著论文</div><div class='value'>{solo.get('count', 0)} ({solo.get('rate', 0):.1%})</div></div>"
+        authorship_html += f"</div></div>"
+        
+        # Patterns card
+        if patterns:
+            authorship_html += "<div class='card authorship-patterns-card'>"
+            authorship_html += "<div class='card-title'>📈 合作模式</div>"
+            
+            collab_pattern = patterns.get("collaboration_pattern", "")
+            if collab_pattern:
+                authorship_html += f"<div class='pattern-item'><strong>合作模式:</strong> {_esc(collab_pattern)}</div>"
+            
+            career_trajectory = patterns.get("career_trajectory", "")
+            if career_trajectory:
+                authorship_html += f"<div class='pattern-item'><strong>职业轨迹:</strong> {_esc(career_trajectory)}</div>"
+            
+            authorship_html += "</div>"
+    
+    # ========== Phase 2: Evidence Chain HTML ==========
+    evidence_html = ""
+    if enhanced_evaluation:
+        for dim_name, dim_data in list(enhanced_evaluation.items())[:5]:  # Show top 5 dimensions
+            if isinstance(dim_data, dict):
+                evidence_html += f"<div class='card evidence-card'>"
+                evidence_html += f"<div class='card-title'>🔍 {_esc(dim_name)}</div>"
+                
+                claims = dim_data.get("claims", [])
+                for claim in claims[:3]:  # Show top 3 claims per dimension
+                    claim_text = claim.get("claim", "")
+                    confidence = claim.get("confidence_score", 0)
+                    evidence_list = claim.get("evidence", [])
+                    
+                    evidence_html += f"<div class='claim-item'>"
+                    evidence_html += f"<div class='claim-text'>{_esc(claim_text)}</div>"
+                    evidence_html += f"<div class='confidence-bar'><div class='confidence-fill' style='width: {confidence * 100}%'></div><span class='confidence-text'>{confidence:.0%}</span></div>"
+                    
+                    if evidence_list:
+                        evidence_html += "<ul class='evidence-list'>"
+                        for ev in evidence_list[:3]:
+                            ev_type = ev.get("type", "")
+                            ev_desc = ev.get("description", "")
+                            ev_url = ev.get("url", "")
+                            
+                            evidence_html += f"<li class='evidence-item'>"
+                            evidence_html += f"<span class='ev-type'>{_esc(ev_type)}</span>: {_esc(ev_desc)}"
+                            if ev_url:
+                                evidence_html += f" {_url_link(ev_url, '🔗')}"
+                            evidence_html += "</li>"
+                        evidence_html += "</ul>"
+                    evidence_html += "</div>"
+                
+                evidence_html += "</div>"
+    
+    # ========== Phase 2: Cross Validation HTML ==========
+    cross_val_html = ""
+    if cross_validation:
+        consistency_score = cross_validation.get("consistency_score", 0)
+        inconsistencies = cross_validation.get("inconsistencies", [])
+        
+        # Consistency card
+        cross_val_html += "<div class='card cross-val-summary-card'>"
+        cross_val_html += "<div class='card-title'>✅ 一致性检验</div>"
+        cross_val_html += f"<div class='consistency-meter'>"
+        cross_val_html += f"<div class='meter-fill' style='width: {consistency_score * 100}%'></div>"
+        cross_val_html += f"<span class='meter-text'>{consistency_score:.0%}</span>"
+        cross_val_html += "</div>"
+        
+        if inconsistencies:
+            cross_val_html += f"<div class='inconsistency-count'>⚠️ 发现 {len(inconsistencies)} 处潜在矛盾</div>"
+        else:
+            cross_val_html += "<div class='all-consistent'>✨ 学术与社交信号高度一致</div>"
+        cross_val_html += "</div>"
+        
+        # Inconsistencies
+        if inconsistencies:
+            cross_val_html += "<div class='card inconsistencies-card'>"
+            cross_val_html += "<div class='card-title'>⚠️ 矛盾分析</div>"
+            for incons in inconsistencies[:5]:
+                cross_val_html += f"<div class='inconsistency-item'>"
+                cross_val_html += f"<div class='incons-type'>{_esc(incons.get('type', ''))}</div>"
+                cross_val_html += f"<div class='incons-desc'>{_esc(incons.get('description', ''))}</div>"
+                cross_val_html += "</div>"
+            cross_val_html += "</div>"
+    
+    # ========== Phase 3: Research Lineage HTML ==========
+    lineage_html = ""
+    if research_lineage:
+        # Summary card
+        lineage_html += "<div class='card lineage-summary-card'>"
+        lineage_html += "<div class='card-title'>🎓 研究脉络总览</div>"
+        lineage_html += f"<div class='lineage-metrics'>"
+        lineage_html += f"<div class='metric-item'><span class='label'>连续性得分</span><span class='value'>{research_lineage.get('continuity_score', 0):.2f}</span></div>"
+        lineage_html += f"<div class='metric-item'><span class='label'>研究成熟度</span><span class='value'>{_esc(research_lineage.get('research_maturity', 'Unknown')[:30])}</span></div>"
+        lineage_html += "</div>"
+        lineage_html += f"<div class='coherence-assessment'>{_esc(research_lineage.get('coherence_assessment', ''))}</div>"
+        lineage_html += "</div>"
+        
+        # Academic lineage
+        academic_lineage = research_lineage.get("academic_lineage", {})
+        if academic_lineage:
+            phd_sup = academic_lineage.get("phd_supervisor")
+            if phd_sup:
+                lineage_html += "<div class='card supervisor-card'>"
+                lineage_html += "<div class='card-title'>👨‍🏫 PhD 导师</div>"
+                lineage_html += f"<div class='supervisor-info'>"
+                lineage_html += f"<div class='sup-name'>{_esc(phd_sup.get('name', ''))}</div>"
+                lineage_html += f"<div class='sup-inst'>{_esc(phd_sup.get('institution', ''))}</div>"
+                if phd_sup.get('year'):
+                    lineage_html += f"<div class='sup-year'>{phd_sup.get('year')}</div>"
+                lineage_html += "</div>"
+                lineage_html += f"<div class='influence'>影响力: {_esc(academic_lineage.get('supervisor_influence', 'Unknown'))}</div>"
+                lineage_html += f"<div class='prestige'>谱系声望: {_esc(academic_lineage.get('lineage_prestige', 'Unknown'))}</div>"
+                lineage_html += "</div>"
+        
+        # Research trajectory
+        trajectory = research_lineage.get("research_trajectory", {})
+        if trajectory:
+            stages = trajectory.get("career_stages", [])
+            lineage_html += "<div class='card trajectory-card'>"
+            lineage_html += "<div class='card-title'>📈 研究轨迹</div>"
+            lineage_html += f"<div class='evolution-text'>{_esc(trajectory.get('research_evolution', ''))}</div>"
+            
+            if stages:
+                lineage_html += "<div class='stages-timeline'>"
+                for stage in stages:
+                    lineage_html += f"<div class='stage-item'>"
+                    lineage_html += f"<div class='stage-header'><strong>{_esc(stage.get('stage', ''))}</strong> <span class='years'>({_esc(stage.get('years', ''))})</span></div>"
+                    lineage_html += f"<div class='stage-stats'>{stage.get('publication_count', 0)} 篇论文</div>"
+                    topics = stage.get('main_topics', [])
+                    if topics:
+                        lineage_html += f"<div class='stage-topics'>主题: {', '.join([_esc(t) for t in topics[:3]])}</div>"
+                    lineage_html += "</div>"
+                lineage_html += "</div>"
+            lineage_html += "</div>"
+        
+        # Topic evolution
+        topic_evo = research_lineage.get("topic_evolution", {})
+        if topic_evo:
+            lineage_html += "<div class='card topic-evolution-card'>"
+            lineage_html += "<div class='card-title'>🔬 主题演变</div>"
+            
+            sustained = topic_evo.get("sustained_topics", [])
+            if sustained:
+                lineage_html += f"<div class='topic-group sustained'>"
+                lineage_html += f"<div class='topic-label'>🟢 持续主题</div>"
+                lineage_html += f"<div class='topic-tags'>{', '.join([_esc(t) for t in sustained])}</div>"
+                lineage_html += "</div>"
+            
+            emerging = topic_evo.get("emerging_topics", [])
+            if emerging:
+                lineage_html += f"<div class='topic-group emerging'>"
+                lineage_html += f"<div class='topic-label'>🆕 新兴主题</div>"
+                lineage_html += f"<div class='topic-tags'>{', '.join([_esc(t) for t in emerging])}</div>"
+                lineage_html += "</div>"
+            
+            abandoned = topic_evo.get("abandoned_topics", [])
+            if abandoned:
+                lineage_html += f"<div class='topic-group abandoned'>"
+                lineage_html += f"<div class='topic-label'>⏸️ 放弃主题</div>"
+                lineage_html += f"<div class='topic-tags'>{', '.join([_esc(t) for t in abandoned])}</div>"
+                lineage_html += "</div>"
+            
+            lineage_html += f"<div class='diversity-trend'>{_esc(topic_evo.get('topic_diversity_trend', ''))}</div>"
+            lineage_html += "</div>"
+    
+    # ========== Phase 3: Productivity Timeline HTML ==========
+    productivity_html = ""
+    if productivity_timeline:
+        # Summary card
+        productivity_html += "<div class='card productivity-summary-card'>"
+        productivity_html += "<div class='card-title'>📊 生产力总览</div>"
+        prod_score = productivity_timeline.get("productivity_score", 0)
+        productivity_html += f"<div class='prod-score'><span class='score-num'>{prod_score:.1f}</span><span class='score-max'>/10</span></div>"
+        productivity_html += f"<div class='trend-assessment'>{_esc(productivity_timeline.get('trend_assessment', ''))}</div>"
+        productivity_html += f"<div class='recent-trend'>近期趋势: {_esc(productivity_timeline.get('recent_trend', ''))}</div>"
+        productivity_html += "</div>"
+        
+        # Publication timeline
+        pub_timeline = productivity_timeline.get("publication_timeline", {})
+        if pub_timeline:
+            annual_counts = pub_timeline.get("annual_counts", [])
+            if annual_counts:
+                productivity_html += "<div class='card pub-timeline-card'>"
+                productivity_html += "<div class='card-title'>📅 年度发表统计</div>"
+                productivity_html += "<div class='timeline-chart'>"
+                max_count = max([item.get("count", 0) for item in annual_counts]) if annual_counts else 1
+                for item in annual_counts[-10:]:  # Show last 10 years
+                    year = item.get("year", "")
+                    count = item.get("count", 0)
+                    height_pct = (count / max_count * 100) if max_count > 0 else 0
+                    productivity_html += f"<div class='timeline-bar-wrapper'>"
+                    productivity_html += f"<div class='timeline-bar' style='height: {height_pct}%' title='{year}: {count} 篇'></div>"
+                    productivity_html += f"<div class='timeline-year'>{year}</div>"
+                    productivity_html += "</div>"
+                productivity_html += "</div>"
+                productivity_html += f"<div class='timeline-stats'>"
+                productivity_html += f"<span>总计: {pub_timeline.get('total_publications', 0)} 篇</span> • "
+                productivity_html += f"<span>年均: {pub_timeline.get('avg_per_year', 0):.1f} 篇</span> • "
+                productivity_html += f"<span>增长率: {pub_timeline.get('growth_rate', 'Unknown')}</span>"
+                productivity_html += "</div>"
+                productivity_html += "</div>"
+        
+        # Quality-quantity balance
+        balance = productivity_timeline.get("quality_quantity_balance", {})
+        if balance:
+            productivity_html += "<div class='card balance-card'>"
+            productivity_html += "<div class='card-title'>⚖️ 质量-数量平衡</div>"
+            productivity_html += f"<div class='balance-metrics'>"
+            productivity_html += f"<div class='balance-item'><span class='label'>质量得分</span><span class='value'>{balance.get('quality_score', 0):.1f}</span></div>"
+            productivity_html += f"<div class='balance-item'><span class='label'>数量得分</span><span class='value'>{balance.get('quantity_score', 0):.1f}</span></div>"
+            productivity_html += f"<div class='balance-item'><span class='label'>平衡得分</span><span class='value'>{balance.get('balance_score', 0):.1f}</span></div>"
+            productivity_html += "</div>"
+            productivity_html += f"<div class='balance-assessment'>{_esc(balance.get('balance_assessment', ''))}</div>"
+            productivity_html += "</div>"
+        
+        # Peak period
+        peak = productivity_timeline.get("peak_productivity_period")
+        if peak:
+            productivity_html += "<div class='card peak-period-card'>"
+            productivity_html += "<div class='card-title'>🌟 高峰生产力期</div>"
+            years = peak.get("years", [])
+            if years:
+                productivity_html += f"<div class='peak-years'>{', '.join([str(y) for y in years])}</div>"
+            productivity_html += f"<div class='peak-stats'>{peak.get('publication_count', 0)} 篇论文</div>"
+            productivity_html += f"<div class='peak-assessment'>{_esc(peak.get('assessment', ''))}</div>"
+            productivity_html += "</div>"
+        
+        # Future prediction
+        prediction = productivity_timeline.get("prediction", {})
+        if prediction:
+            productivity_html += "<div class='card prediction-card'>"
+            productivity_html += "<div class='card-title'>🔮 未来预测</div>"
+            productivity_html += f"<div class='prediction-trend'>{_esc(prediction.get('expected_trend', ''))}</div>"
+            productivity_html += f"<div class='prediction-confidence'>置信度: {_esc(prediction.get('confidence', ''))}</div>"
+            recommendations = prediction.get("recommendations", [])
+            if recommendations:
+                productivity_html += "<div class='recommendations'>"
+                productivity_html += "<div class='rec-title'>💡 建议</div>"
+                for rec in recommendations:
+                    productivity_html += f"<div class='rec-item'>• {_esc(rec)}</div>"
+                productivity_html += "</div>"
+            productivity_html += "</div>"
 
     # Metrics
     metrics_html = f"""
@@ -1412,6 +1719,629 @@ def render_html(final_json_path: str) -> str:
             text-decoration: underline;
         }
     }
+    
+    /* ========== Phase 1-3 Enhanced Styles ========== */
+    
+    /* Risk Assessment Styles */
+    .risk-summary-card {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+    }
+    
+    .risk-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .risk-stat {
+        text-align: center;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+    }
+    
+    .risk-stat.critical { border-left: 3px solid #dc2626; }
+    .risk-stat.high { border-left: 3px solid #f59e0b; }
+    .risk-stat.medium { border-left: 3px solid #fbbf24; }
+    .risk-stat.low { border-left: 3px solid #10b981; }
+    
+    .risk-stat .num {
+        display: block;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    
+    .risk-stat .label {
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .risk-category-card {
+        border-left: 3px solid #f59e0b;
+    }
+    
+    .risk-item {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+    }
+    
+    .risk-item.critical { background: #fee2e2; border-left: 3px solid #dc2626; }
+    .risk-item.high { background: #fef3c7; border-left: 3px solid #f59e0b; }
+    .risk-item.medium { background: #fef9c3; border-left: 3px solid #fbbf24; }
+    .risk-item.low { background: #d1fae5; border-left: 3px solid #10b981; }
+    
+    .risk-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .risk-header .badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.9);
+    }
+    
+    .risk-desc {
+        color: var(--color-text);
+        line-height: 1.5;
+    }
+    
+    .risk-evidence {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.5);
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    /* Authorship Analysis Styles */
+    .authorship-metrics-card {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-left: 4px solid var(--color-primary);
+    }
+    
+    .metric-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .metric-item {
+        text-align: center;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.8);
+    }
+    
+    .metric-item .label {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-item .value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--color-primary);
+    }
+    
+    .authorship-patterns-card {
+        border-left: 3px solid var(--color-primary);
+    }
+    
+    .pattern-item {
+        padding: 0.75rem 0;
+        line-height: 1.6;
+    }
+    
+    .pattern-item strong {
+        color: var(--color-primary);
+    }
+    
+    /* Evidence Chain Styles */
+    .evidence-card {
+        border-left: 3px solid #8b5cf6;
+    }
+    
+    .claim-item {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+    }
+    
+    .claim-text {
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: 0.75rem;
+    }
+    
+    .confidence-bar {
+        position: relative;
+        height: 24px;
+        background: #e5e7eb;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);
+        transition: width 0.3s ease;
+    }
+    
+    .confidence-text {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-text);
+    }
+    
+    .evidence-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .evidence-item {
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+    }
+    
+    .ev-type {
+        font-weight: 600;
+        color: #8b5cf6;
+    }
+    
+    /* Cross Validation Styles */
+    .cross-val-summary-card {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border-left: 4px solid var(--color-success);
+    }
+    
+    .consistency-meter {
+        position: relative;
+        height: 32px;
+        background: #e5e7eb;
+        border-radius: 16px;
+        overflow: hidden;
+        margin: 1rem 0;
+    }
+    
+    .meter-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--color-success) 0%, #34d399 100%);
+        transition: width 0.3s ease;
+    }
+    
+    .meter-text {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--color-text);
+    }
+    
+    .inconsistency-count {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(251, 191, 36, 0.2);
+        color: #92400e;
+        font-weight: 600;
+    }
+    
+    .all-consistent {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(16, 185, 129, 0.2);
+        color: #065f46;
+        font-weight: 600;
+    }
+    
+    .inconsistencies-card {
+        border-left: 3px solid #f59e0b;
+    }
+    
+    .inconsistency-item {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: #fef3c7;
+        border-left: 3px solid #f59e0b;
+    }
+    
+    .incons-type {
+        font-weight: 700;
+        color: #92400e;
+        margin-bottom: 0.5rem;
+    }
+    
+    .incons-desc {
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+    }
+    
+    /* Research Lineage Styles */
+    .lineage-summary-card {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        border-left: 4px solid #6366f1;
+    }
+    
+    .lineage-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .lineage-metrics .metric-item {
+        background: rgba(255, 255, 255, 0.8);
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+    }
+    
+    .coherence-assessment {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+        font-style: italic;
+        color: var(--color-text-secondary);
+    }
+    
+    .supervisor-card {
+        border-left: 3px solid #6366f1;
+    }
+    
+    .supervisor-info {
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+    }
+    
+    .sup-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--color-text);
+        margin-bottom: 0.5rem;
+    }
+    
+    .sup-inst {
+        color: var(--color-text-secondary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .sup-year {
+        color: var(--color-text-muted);
+        font-size: 0.875rem;
+    }
+    
+    .influence, .prestige {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        border-radius: var(--radius-sm);
+        background: #f5f5f5;
+        font-size: 0.875rem;
+    }
+    
+    .trajectory-card {
+        border-left: 3px solid #8b5cf6;
+    }
+    
+    .evolution-text {
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+        line-height: 1.6;
+        font-style: italic;
+    }
+    
+    .stages-timeline {
+        margin-top: 1rem;
+    }
+    
+    .stage-item {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+        border-left: 3px solid #8b5cf6;
+    }
+    
+    .stage-header {
+        margin-bottom: 0.5rem;
+    }
+    
+    .stage-header strong {
+        color: #6b21a8;
+    }
+    
+    .stage-header .years {
+        color: var(--color-text-muted);
+        font-size: 0.875rem;
+    }
+    
+    .stage-stats {
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        margin: 0.25rem 0;
+    }
+    
+    .stage-topics {
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(139, 92, 246, 0.2);
+    }
+    
+    .topic-evolution-card {
+        border-left: 3px solid #10b981;
+    }
+    
+    .topic-group {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+    }
+    
+    .topic-group.sustained {
+        background: #d1fae5;
+        border-left: 3px solid #10b981;
+    }
+    
+    .topic-group.emerging {
+        background: #dbeafe;
+        border-left: 3px solid #3b82f6;
+    }
+    
+    .topic-group.abandoned {
+        background: #fee2e2;
+        border-left: 3px solid #ef4444;
+    }
+    
+    .topic-label {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .topic-tags {
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+    }
+    
+    .diversity-trend {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+        font-style: italic;
+        color: var(--color-text-secondary);
+    }
+    
+    /* Productivity Timeline Styles */
+    .productivity-summary-card {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+        text-align: center;
+    }
+    
+    .prod-score {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #92400e;
+        margin: 1rem 0;
+    }
+    
+    .prod-score .score-num {
+        color: #f59e0b;
+    }
+    
+    .prod-score .score-max {
+        font-size: 1.5rem;
+        color: var(--color-text-muted);
+    }
+    
+    .trend-assessment {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+        font-weight: 600;
+        color: var(--color-text);
+    }
+    
+    .recent-trend {
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.5);
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .pub-timeline-card {
+        border-left: 3px solid #3b82f6;
+    }
+    
+    .timeline-chart {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        height: 200px;
+        margin: 1.5rem 0;
+        padding: 0 1rem;
+        border-bottom: 2px solid var(--color-border);
+    }
+    
+    .timeline-bar-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 60px;
+    }
+    
+    .timeline-bar {
+        width: 100%;
+        min-height: 4px;
+        background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%);
+        border-radius: 4px 4px 0 0;
+        transition: all 0.3s ease;
+    }
+    
+    .timeline-bar-wrapper:hover .timeline-bar {
+        background: linear-gradient(180deg, #2563eb 0%, #3b82f6 100%);
+        transform: scaleY(1.05);
+    }
+    
+    .timeline-year {
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        transform: rotate(-45deg);
+        white-space: nowrap;
+    }
+    
+    .timeline-stats {
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+        text-align: center;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .balance-card {
+        border-left: 3px solid #8b5cf6;
+    }
+    
+    .balance-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .balance-item {
+        text-align: center;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+    }
+    
+    .balance-item .label {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .balance-item .value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #8b5cf6;
+    }
+    
+    .balance-assessment {
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+        font-style: italic;
+        color: var(--color-text-secondary);
+    }
+    
+    .peak-period-card {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+    }
+    
+    .peak-years {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #92400e;
+        margin: 0.75rem 0;
+    }
+    
+    .peak-stats {
+        font-size: 1.125rem;
+        color: var(--color-text-secondary);
+        margin: 0.5rem 0;
+    }
+    
+    .peak-assessment {
+        padding: 1rem;
+        margin-top: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+        font-style: italic;
+    }
+    
+    .prediction-card {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        border-left: 4px solid #6366f1;
+    }
+    
+    .prediction-trend {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.8);
+        font-weight: 600;
+        color: var(--color-text);
+    }
+    
+    .prediction-confidence {
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.6);
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .recommendations {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+    }
+    
+    .rec-title {
+        font-weight: 700;
+        color: #4338ca;
+        margin-bottom: 0.5rem;
+    }
+    
+    .rec-item {
+        padding: 0.5rem 0;
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+    }
+    
     """
 
     # Sidebar navigation
@@ -1424,6 +2354,12 @@ def render_html(final_json_path: str) -> str:
         ("review", "学术评价"),
         ("evaluation", "维度评价"),
         ("scholar", "学术指标"),
+        ("risk-assessment", "风险评估"),
+        ("authorship", "作者贡献分析"),
+        ("evidence-chain", "证据链追溯"),
+        ("cross-validation", "交叉验证"),
+        ("research-lineage", "研究脉络分析"),
+        ("productivity-timeline", "产出时间线分析"),
         ("publications", "论文"),
         ("awards-honors", "奖项与荣誉"),
         ("projects", "项目经验"),
@@ -1531,6 +2467,18 @@ def render_html(final_json_path: str) -> str:
                 </div>
             </div>
         </section>
+        
+        {("<section id='risk-assessment' class='section'><h2>🚨 风险评估</h2><div class='cards'>" + risk_html + "</div></section>") if risk_html else ""}
+        
+        {("<section id='authorship' class='section'><h2>📊 作者贡献分析</h2><div class='cards'>" + authorship_html + "</div></section>") if authorship_html else ""}
+        
+        {("<section id='evidence-chain' class='section'><h2>🔍 证据链追溯</h2><div class='cards'>" + evidence_html + "</div></section>") if evidence_html else ""}
+        
+        {("<section id='cross-validation' class='section'><h2>✅ 交叉验证</h2><div class='cards'>" + cross_val_html + "</div></section>") if cross_val_html else ""}
+        
+        {("<section id='research-lineage' class='section'><h2>🎓 研究脉络分析</h2><div class='cards'>" + lineage_html + "</div></section>") if lineage_html else ""}
+        
+        {("<section id='productivity-timeline' class='section'><h2>📊 产出时间线分析</h2><div class='cards'>" + productivity_html + "</div></section>") if productivity_html else ""}
         
         <section id='publications' class='section'>
             <h2>论文 <span class='hbadge'>{len(publications)}</span></h2>
