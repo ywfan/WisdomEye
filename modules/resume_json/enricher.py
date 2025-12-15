@@ -1577,15 +1577,24 @@ class ResumeJSONEnricher:
         # Phase 2: Add academic-social cross-validation
         print("[交叉验证] 开始学术-社交信号交叉验证...")
         social_data = data.get("social_influence", {})
-        if social_data:
-            cross_validation = cross_validate_evaluation(
-                academic_evaluation=dims,
-                social_analysis=social_data
-            )
-            final_obj["cross_validation"] = cross_validation
-            consistency = cross_validation.get("consistency_score", 0)
-            inconsistencies = len(cross_validation.get("inconsistencies", []))
-            print(f"[交叉验证-完成] 一致性得分: {consistency:.1%}, 发现矛盾: {inconsistencies} 个")
+        # Type validation: ensure dims is a dict before cross-validation
+        if social_data and isinstance(dims, dict) and isinstance(social_data, dict):
+            try:
+                cross_validation = cross_validate_evaluation(
+                    academic_evaluation=dims,
+                    social_analysis=social_data
+                )
+                final_obj["cross_validation"] = cross_validation
+                consistency = cross_validation.get("consistency_score", 0)
+                inconsistencies = len(cross_validation.get("inconsistencies", []))
+                print(f"[交叉验证-完成] 一致性得分: {consistency:.1%}, 发现矛盾: {inconsistencies} 个")
+            except Exception as e:
+                print(f"[交叉验证-错误] {str(e)}")
+                final_obj["cross_validation"] = {"error": str(e), "consistency_score": 0, "inconsistencies": []}
+        elif not isinstance(dims, dict):
+            print(f"[交叉验证-跳过] dims 类型错误: {type(dims).__name__}, 期望 dict")
+        else:
+            print("[交叉验证-跳过] 缺少社交数据")
         
         # Phase 3: Add research lineage analysis
         print("[研究脉络分析] 开始分析学术谱系和研究轨迹...")

@@ -94,6 +94,12 @@ class CrossValidator:
         Returns:
             Cross-validation report with consistency score and inconsistencies
         """
+        # Type validation
+        if not isinstance(academic_evaluation, dict):
+            raise TypeError(f"academic_evaluation must be dict, got {type(academic_evaluation).__name__}")
+        if not isinstance(social_analysis, dict):
+            raise TypeError(f"social_analysis must be dict, got {type(social_analysis).__name__}")
+        
         # Extract claims from academic evaluation
         academic_claims = self._extract_academic_claims(academic_evaluation)
         
