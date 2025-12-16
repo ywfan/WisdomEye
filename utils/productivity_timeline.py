@@ -260,11 +260,11 @@ class ProductivityTimelineAnalyzer:
             
             # Consistency level
             if cv < 0.4:
-                patterns["consistency_level"] = "Highly Consistent"
+                patterns["consistency_level"] = "高度一致"
             elif cv < 0.7:
-                patterns["consistency_level"] = "Moderately Consistent"
+                patterns["consistency_level"] = "中等一致"
             else:
-                patterns["consistency_level"] = "Variable"
+                patterns["consistency_level"] = "波动较大"
         
         # Publication rhythm
         patterns["publication_rhythm"] = self._analyze_publication_rhythm(year_counts)
@@ -345,15 +345,15 @@ class ProductivityTimelineAnalyzer:
         ql_score = balance["quality_score"]
         
         if q_score >= 3 and ql_score >= 7:
-            balance["balance_assessment"] = "Excellent - High quantity with high quality"
+            balance["balance_assessment"] = "优秀 - 高产出且高质量"
         elif q_score >= 2 and ql_score >= 5:
-            balance["balance_assessment"] = "Good - Balanced output and impact"
+            balance["balance_assessment"] = "良好 - 产出与影响力平衡"
         elif q_score >= 3 and ql_score < 5:
-            balance["balance_assessment"] = "Quantity-focused - High output, moderate impact"
+            balance["balance_assessment"] = "数量导向 - 高产出，中等影响力"
         elif q_score < 2 and ql_score >= 7:
-            balance["balance_assessment"] = "Quality-focused - Selective high-impact publications"
+            balance["balance_assessment"] = "质量导向 - 精选高影响力论文"
         else:
-            balance["balance_assessment"] = "Developing - Building publication record"
+            balance["balance_assessment"] = "发展中 - 正在建立学术记录"
         
         return balance
     
@@ -505,7 +505,7 @@ class ProductivityTimelineAnalyzer:
     ) -> str:
         """Calculate growth rate from timeline"""
         if len(timeline) < 3:
-            return "Insufficient data"
+            return "数据不足"
         
         # Compare first half vs second half
         mid_point = len(timeline) // 2
@@ -516,18 +516,18 @@ class ProductivityTimelineAnalyzer:
         second_avg = sum(t.get(value_key, 0) for t in second_half) / len(second_half)
         
         if first_avg == 0:
-            return "Strong growth from initial period"
+            return "从初期强劲增长"
         
         growth_rate = (second_avg - first_avg) / first_avg
         
         if growth_rate >= 0.5:
-            return f"Strong growth (+{int(growth_rate * 100)}%)"
+            return f"强劲增长 (+{int(growth_rate * 100)}%)"
         elif growth_rate >= 0.2:
-            return f"Moderate growth (+{int(growth_rate * 100)}%)"
+            return f"中等增长 (+{int(growth_rate * 100)}%)"
         elif growth_rate >= -0.1:
-            return "Stable"
+            return "稳定"
         else:
-            return f"Declining ({int(growth_rate * 100)}%)"
+            return f"下降 ({int(growth_rate * 100)}%)"
     
     def _calculate_h_index_growth(self, data: Dict[str, Any]) -> List[Dict]:
         """Calculate h-index growth over time (simplified)"""
@@ -725,12 +725,12 @@ class ProductivityTimelineAnalyzer:
             score += 1.0
         
         # Factor 4: Growth trend (0-2 points)
-        growth_rate = pub_timeline.get("growth_rate", "Unknown")
-        if "Strong growth" in growth_rate:
+        growth_rate = pub_timeline.get("growth_rate", "未知")
+        if "强劲增长" in growth_rate:
             score += 2.0
-        elif "Moderate growth" in growth_rate:
+        elif "中等增长" in growth_rate:
             score += 1.5
-        elif "Stable" in growth_rate:
+        elif "稳定" in growth_rate:
             score += 1.0
         else:
             score += 0.5
@@ -750,17 +750,17 @@ class ProductivityTimelineAnalyzer:
         
         # Combine assessments
         positive_indicators = sum([
-            "growth" in growth_rate.lower(),
-            "excellent" in balance_assessment.lower() or "good" in balance_assessment.lower(),
-            "improving" in venue_trend.lower()
+            "增长" in growth_rate,
+            "优秀" in balance_assessment or "良好" in balance_assessment,
+            "改善" in venue_trend
         ])
         
         if positive_indicators >= 2:
-            return "Positive - Strong upward trajectory in productivity and quality"
+            return "积极 - 生产力和质量呈强劲上升趋势"
         elif positive_indicators >= 1:
-            return "Stable-Positive - Maintaining good productivity with some improvements"
+            return "稳定-积极 - 保持良好生产力并有所改善"
         else:
-            return "Needs attention - Consider strategies to enhance productivity or impact"
+            return "需关注 - 考虑提升生产力或影响力的策略"
     
     def _identify_peak_period(self, analysis_result: Dict[str, Any]) -> Optional[Dict]:
         """Identify peak productivity period"""
@@ -799,21 +799,21 @@ class ProductivityTimelineAnalyzer:
         return {
             "years": peak_years,
             "publication_count": max_count,
-            "assessment": "Peak productivity period identified"
+            "assessment": "高峰生产力期已识别"
         }
     
     def _assess_peak_quality(self, count: int, quality: float) -> str:
         """Assess quality of peak period"""
         if count >= 5 and quality >= 7:
-            return "Outstanding peak - High productivity with high impact"
+            return "卓越高峰 - 高生产力且高影响力"
         elif count >= 3 and quality >= 6:
-            return "Strong peak - Good balance of quantity and quality"
+            return "强劲高峰 - 数量与质量平衡"
         elif count >= 5:
-            return "High-volume peak - Focus on quantity"
+            return "高产出高峰 - 侧重数量"
         elif quality >= 7:
-            return "High-impact peak - Focus on quality"
+            return "高影响高峰 - 侧重质量"
         else:
-            return "Moderate peak period"
+            return "中等高峰期"
     
     def _assess_recent_trend(self, analysis_result: Dict[str, Any]) -> str:
         """Assess recent productivity trend (last 2-3 years)"""
@@ -821,7 +821,7 @@ class ProductivityTimelineAnalyzer:
         annual_counts = pub_timeline.get("annual_counts", [])
         
         if len(annual_counts) < 3:
-            return "Insufficient recent data"
+            return "近期数据不足"
         
         # Get last 3 years
         recent_years = annual_counts[-3:]
@@ -833,19 +833,19 @@ class ProductivityTimelineAnalyzer:
             latest_year = recent_counts[-1]
             
             if latest_year >= avg_recent * 1.3:
-                return "Accelerating - Recent surge in productivity"
+                return "加速 - 近期生产力大幅增长"
             elif latest_year >= avg_recent * 0.8:
-                return "Stable - Consistent recent output"
+                return "稳定 - 近期产出保持一致"
             else:
-                return "Slowing - Recent decline in output (may be normal variation)"
+                return "放缓 - 近期产出下降（可能是正常波动）"
         
-        return "Unknown"
+        return "未知"
     
     def _predict_future_productivity(self, analysis_result: Dict[str, Any]) -> Dict[str, Any]:
         """Predict future productivity based on trends"""
         prediction = {
-            "expected_trend": "Unknown",
-            "confidence": "Low",
+            "expected_trend": "未知",
+            "confidence": "低",
             "recommendations": []
         }
         
@@ -858,34 +858,34 @@ class ProductivityTimelineAnalyzer:
         recent_trend = analysis_result.get("recent_trend", "Unknown")
         
         # Prediction logic
-        if "Strong growth" in growth_rate and "Accelerating" in recent_trend:
-            prediction["expected_trend"] = "Continued growth - Likely to maintain or increase productivity"
-            prediction["confidence"] = "High"
-        elif "Stable" in growth_rate and consistency == "Highly Consistent":
-            prediction["expected_trend"] = "Steady output - Likely to maintain current productivity level"
-            prediction["confidence"] = "Medium-High"
-        elif "Declining" in growth_rate or "Slowing" in recent_trend:
-            prediction["expected_trend"] = "Needs monitoring - Recent slowdown may indicate temporary or structural issues"
-            prediction["confidence"] = "Medium"
-            prediction["recommendations"].append("Investigate factors affecting recent productivity")
+        if "强劲增长" in growth_rate and "加速" in recent_trend:
+            prediction["expected_trend"] = "持续增长 - 可能保持或提高生产力"
+            prediction["confidence"] = "高"
+        elif "稳定" in growth_rate and consistency == "高度一致":
+            prediction["expected_trend"] = "稳定产出 - 可能保持当前生产力水平"
+            prediction["confidence"] = "中高"
+        elif "下降" in growth_rate or "放缓" in recent_trend:
+            prediction["expected_trend"] = "需要监控 - 近期放缓可能表明暂时或结构性问题"
+            prediction["confidence"] = "中"
+            prediction["recommendations"].append("调查影响近期生产力的因素")
         else:
-            prediction["expected_trend"] = "Variable - Mixed signals suggest unstable productivity patterns"
-            prediction["confidence"] = "Low"
+            prediction["expected_trend"] = "波动 - 混合信号表明生产力模式不稳定"
+            prediction["confidence"] = "低"
         
         # Add general recommendations
         balance = analysis_result.get("quality_quantity_balance", {})
         balance_assessment = balance.get("balance_assessment", "")
         
-        if "Quantity-focused" in balance_assessment:
-            prediction["recommendations"].append("Consider focusing on higher-impact venues")
-        elif "Quality-focused" in balance_assessment:
-            prediction["recommendations"].append("Strong quality foundation; could increase output volume")
+        if "数量导向" in balance_assessment:
+            prediction["recommendations"].append("建议关注更高影响力的期刊/会议")
+        elif "质量导向" in balance_assessment:
+            prediction["recommendations"].append("已有坚实的质量基础，可增加产出数量")
         
         venue_timeline = analysis_result.get("venue_distribution_timeline", {})
         venue_trend = venue_timeline.get("venue_quality_trend", "")
         
-        if "Declining" in venue_trend:
-            prediction["recommendations"].append("Target more top-tier publication venues")
+        if "下降" in venue_trend:
+            prediction["recommendations"].append("建议目标更多顶级期刊/会议")
         
         return prediction
 
