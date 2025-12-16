@@ -18,21 +18,21 @@ from datetime import datetime
 
 
 class RiskSeverity(Enum):
-    """Risk severity levels"""
-    CRITICAL = "CRITICAL"  # Deal-breaker, requires immediate attention
-    HIGH = "HIGH"  # Serious concern, must investigate
-    MEDIUM = "MEDIUM"  # Notable concern, should verify
-    LOW = "LOW"  # Minor concern, awareness needed
+    """风险严重程度"""
+    CRITICAL = "严重"  # 关键问题，需立即关注
+    HIGH = "高"  # 严重关切，必须调查
+    MEDIUM = "中"  # 值得注意，应当验证
+    LOW = "低"  # 轻微关注，需要了解
 
 
 class RiskCategory(Enum):
-    """Risk categories"""
-    INDEPENDENCE = "Research Independence"
-    PRODUCTIVITY = "Productivity"
-    INTEGRITY = "Academic Integrity"
-    COLLABORATION = "Collaboration"
-    RELEVANCE = "Field Relevance"
-    TEACHING = "Teaching Ability"
+    """风险类别"""
+    INDEPENDENCE = "研究独立性"
+    PRODUCTIVITY = "学术产出"
+    INTEGRITY = "学术诚信"
+    COLLABORATION = "合作能力"
+    RELEVANCE = "领域相关性"
+    TEACHING = "教学能力"
 
 
 @dataclass
@@ -64,13 +64,16 @@ class RiskAssessor:
     Comprehensive risk assessment system
     """
     
-    def __init__(self, current_year: int = 2025):
+    def __init__(self, current_year: int = None):
         """
         Initialize risk assessor
         
         Args:
-            current_year: Current year for calculations
+            current_year: Current year for calculations (defaults to current year)
         """
+        if current_year is None:
+            from datetime import datetime
+            current_year = datetime.now().year
         self.current_year = current_year
     
     def assess_all_risks(self, resume_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -184,14 +187,13 @@ class RiskAssessor:
             risks.append(Risk(
                 category=RiskCategory.INDEPENDENCE,
                 severity=RiskSeverity.HIGH,
-                title=f"Low first-author publication rate ({first_author_rate:.1%})",
-                detail=f"Only {first_author_count} out of {total_pubs} publications are first-author.",
-                implication="May indicate heavy reliance on advisor/collaborators. "
-                           "Uncertain ability to lead independent research program.",
+                title=f"第一作者论文比例过低 ({first_author_rate:.1%})",
+                detail=f"{total_pubs}篇论文中仅{first_author_count}篇为第一作者。",
+                implication="可能过度依赖导师/合作者，独立研究能力存疑。",
                 mitigation=[
-                    "Request detailed statement on independent research plans",
-                    "Interview should probe candidate's ability to formulate original research questions",
-                    "Contact references specifically about independence",
+                    "要求提供详细的独立研究计划说明",
+                    "面试时探查候选人提出原创研究问题的能力",
+                    "联系推荐人特别询问独立性情况",
                 ],
                 red_flag=True
             ))
@@ -199,13 +201,12 @@ class RiskAssessor:
             risks.append(Risk(
                 category=RiskCategory.INDEPENDENCE,
                 severity=RiskSeverity.MEDIUM,
-                title=f"Moderate first-author rate ({first_author_rate:.1%})",
-                detail=f"{first_author_count} out of {total_pubs} publications are first-author.",
-                implication="Candidate has some independent work but significant collaborative publications. "
-                           "Should verify leadership capability.",
+                title=f"第一作者比例中等 ({first_author_rate:.1%})",
+                detail=f"{total_pubs}篇论文中有{first_author_count}篇为第一作者。",
+                implication="候选人有一定独立工作，但合作论文占比较大，需验证领导能力。",
                 mitigation=[
-                    "Request examples of independently-led projects",
-                    "Verify research leadership during reference checks",
+                    "要求提供独立主导项目的实例",
+                    "推荐人验证时关注研究领导力",
                 ],
                 red_flag=False
             ))
@@ -215,13 +216,12 @@ class RiskAssessor:
             risks.append(Risk(
                 category=RiskCategory.INDEPENDENCE,
                 severity=RiskSeverity.MEDIUM,
-                title="No corresponding-author publications",
-                detail="Candidate has never been corresponding author on any publication.",
-                implication="May not have led full research projects from conception to publication. "
-                           "Leadership experience unclear.",
+                title="无通讯作者论文",
+                detail="候选人从未担任任何论文的通讯作者。",
+                implication="可能未主导过完整研究项目（从构思到发表），领导经验不明确。",
                 mitigation=[
-                    "Verify research leadership during reference checks",
-                    "Request examples of project leadership",
+                    "推荐人验证时专门询问研究领导力",
+                    "要求提供项目领导经验实例",
                 ],
                 red_flag=False
             ))
@@ -231,13 +231,12 @@ class RiskAssessor:
             risks.append(Risk(
                 category=RiskCategory.INDEPENDENCE,
                 severity=RiskSeverity.MEDIUM,
-                title=f"Limited co-author diversity (only {len(coauthors)} unique co-authors)",
-                detail=f"Only {len(coauthors)} unique co-authors across {total_pubs} publications.",
-                implication="May be overly dependent on a small research group. "
-                           "Limited network or collaboration skills.",
+                title=f"合作者多样性有限（仅{len(coauthors)}位不同合作者）",
+                detail=f"{total_pubs}篇论文中仅有{len(coauthors)}位不同的合作者。",
+                implication="可能过度依赖小型研究团队，人脉网络或合作能力有限。",
                 mitigation=[
-                    "Discuss collaboration strategy during interview",
-                    "Verify ability to build new collaborations",
+                    "面试时讨论合作策略",
+                    "验证建立新合作关系的能力",
                 ],
                 red_flag=False
             ))
@@ -283,14 +282,13 @@ class RiskAssessor:
             risks.append(Risk(
                 category=RiskCategory.PRODUCTIVITY,
                 severity=RiskSeverity.MEDIUM,
-                title=f"Low recent publication rate ({recent_pub_rate:.1f} pubs/year)",
-                detail=f"Only {len(recent_pubs)} publications in last 2 years.",
-                implication="May struggle to meet tenure publication requirements "
-                           "(typical expectation: 2-3 quality pubs/year).",
+                title=f"近期发表率偏低（{recent_pub_rate:.1f}篇/年）",
+                detail=f"近两年仅发表{len(recent_pubs)}篇论文。",
+                implication="可能难以满足终身教职发表要求（典型期望：每年2-3篇高质量论文）。",
                 mitigation=[
-                    "Inquire about work in progress",
-                    "Check for papers under review",
-                    "Understand reasons for productivity gap",
+                    "询问正在进行的工作",
+                    "检查在审论文",
+                    "了解产出缺口的原因",
                 ],
                 red_flag=False
             ))
@@ -310,14 +308,13 @@ class RiskAssessor:
                 risks.append(Risk(
                     category=RiskCategory.PRODUCTIVITY,
                     severity=RiskSeverity.HIGH,
-                    title=f"Extended publication gap ({gap_months} months)",
-                    detail=f"Gap from {gap_start} to {gap_end}",
-                    implication="Significant research hiatus. Possible career disruption or "
-                               "productivity issue.",
+                    title=f"长时间发表空缺（{gap_months}个月）",
+                    detail=f"空缺期：{gap_start}年至{gap_end}年",
+                    implication="研究中断较长，可能存在职业中断或产出问题。",
                     mitigation=[
-                        "⚠️ MUST investigate reasons during interview",
-                        "Could indicate personal issues, failed projects, or lack of focus",
-                        "Request information on work-in-progress during gap period",
+                        "⚠️ 必须在面试时调查原因",
+                        "可能表明个人问题、项目失败或缺乏专注",
+                        "要求提供空缺期间正在进行的工作信息",
                     ],
                     red_flag=True
                 ))
@@ -325,12 +322,12 @@ class RiskAssessor:
                 risks.append(Risk(
                     category=RiskCategory.PRODUCTIVITY,
                     severity=RiskSeverity.MEDIUM,
-                    title=f"Notable publication gap ({gap_months} months)",
-                    detail=f"Gap from {gap_start} to {gap_end}",
-                    implication="Extended period without publications. Should understand context.",
+                    title=f"发表空缼期较长（{gap_months}个月）",
+                    detail=f"空缼期：{gap_start}年至{gap_end}年",
+                    implication="较长时间无论文发表，应了解背景情况。",
                     mitigation=[
-                        "Ask about reasons for gap during interview",
-                        "Verify productivity has resumed",
+                        "面试时询问空缼原因",
+                        "验证产出已恢复",
                     ],
                     red_flag=False
                 ))
@@ -347,14 +344,13 @@ class RiskAssessor:
                 risks.append(Risk(
                     category=RiskCategory.PRODUCTIVITY,
                     severity=RiskSeverity.MEDIUM,
-                    title="Declining productivity trend",
-                    detail=f"Recent productivity ({recent_rate:.1f} pubs/year) is {(1 - recent_rate/early_rate)*100:.0f}% "
-                           f"lower than early career ({early_rate:.1f} pubs/year).",
-                    implication="Productivity may not be sustainable. Could indicate burnout or shifting priorities.",
+                    title="产出量下降趋势",
+                    detail=f"近期产出 ({recent_rate:.1f}篇/年) 比早期 ({early_rate:.1f}篇/年) 低{(1 - recent_rate/early_rate)*100:.0f}%。",
+                    implication="产出可能不可持续，可能表明职业倦怠或优先级转移。",
                     mitigation=[
-                        "Discuss research plans and productivity goals",
-                        "Understand reasons for decline",
-                        "Check work-in-progress pipeline",
+                        "讨论研究计划和产出目标",
+                        "了解下降原因",
+                        "检查在研项目渠道",
                     ],
                     red_flag=False
                 ))
@@ -402,14 +398,13 @@ class RiskAssessor:
             risks.append(Risk(
                 category=RiskCategory.INTEGRITY,
                 severity=RiskSeverity.MEDIUM,
-                title=f"Unusually high publication rate ({pubs_per_year:.1f} pubs/year)",
-                detail=f"{total_pubs} publications over {career_years} years",
-                implication="May warrant verification of author contributions. "
-                           "Check for predatory journals or minimal contributions.",
+                title=f"发表率异常高（{pubs_per_year:.1f}篇/年）",
+                detail=f"{career_years}年内发表{total_pubs}篇论文",
+                implication="可能需要验证作者贡献，检查是否存在掠夺性期刊或贡献微乎其微。",
                 mitigation=[
-                    "⚠️ Verify top 5 publications during reference checks",
-                    "Request detailed contribution statements",
-                    "Check journal quality for all publications",
+                    "⚠️ 推荐人验证时重点检查前5篇论文",
+                    "要求提供详细的贡献声明",
+                    "检查所有论文的期刊质量",
                 ],
                 red_flag=False
             ))
@@ -422,12 +417,12 @@ class RiskAssessor:
                 risks.append(Risk(
                     category=RiskCategory.INTEGRITY,
                     severity=RiskSeverity.MEDIUM,
-                    title=f"High self-citation rate ({self_cite_rate:.1%})",
-                    detail="Over 30% of citations are self-citations",
-                    implication="May indicate citation inflation or narrow research impact.",
+                    title=f"自引率较高（{self_cite_rate:.1%}）",
+                    detail="超过30%的引用为自引",
+                    implication="可能表明引用膨胀或研究影响力狭窄。",
                     mitigation=[
-                        "Manually review key papers for citation quality",
-                        "Verify external recognition of work",
+                        "人工审查关键论文的引用质量",
+                        "验证工作的外部认可度",
                     ],
                     red_flag=False
                 ))
@@ -454,13 +449,12 @@ class RiskAssessor:
                 risks.append(Risk(
                     category=RiskCategory.COLLABORATION,
                     severity=RiskSeverity.LOW,
-                    title=f"Limited collaboration network (degree {degree})",
-                    detail=f"Only {degree} direct collaborators identified",
-                    implication="May have difficulty building research collaborations. "
-                               "Could limit interdisciplinary opportunities.",
+                    title=f"合作网络有限（度为{degree}）",
+                    detail=f"仅识别出{degree}位直接合作者",
+                    implication="可能难以建立研究合作，可能限制跨学科机会。",
                     mitigation=[
-                        "Discuss collaboration strategy and plans",
-                        "Verify ability to work in team settings",
+                        "讨论合作策略和计划",
+                        "验证团队工作能力",
                     ],
                     red_flag=False
                 ))
@@ -500,13 +494,13 @@ class RiskAssessor:
             risks.append(Risk(
                 category=RiskCategory.TEACHING,
                 severity=RiskSeverity.MEDIUM,
-                title="No documented teaching experience",
-                detail="Resume does not list any teaching positions or experience",
-                implication="For tenure-track positions, teaching ability is critical but unverified.",
+                title="无教学经验记录",
+                detail="简历中未列出任何教学职位或经验",
+                implication="对于终身教职岗位，教学能力至关重要但未经验证。",
                 mitigation=[
-                    "Request teaching statement and philosophy",
-                    "Ask for teaching evaluations if available",
-                    "Consider teaching demonstration during interview",
+                    "要求提供教学陈述和理念",
+                    "如有可能，要求提供教学评估",
+                    "考虑在面试时安排教学演示",
                 ],
                 red_flag=False
             ))
@@ -558,41 +552,40 @@ class RiskAssessor:
         
         if overall_risk == "CRITICAL":
             return {
-                "level": "DO NOT PROCEED",
-                "summary": "Critical risks identified. Not recommended for hire without resolution.",
+                "level": "不建议继续",
+                "summary": "识别出严重风险，在问题解决前不建议录用。",
                 "next_steps": [
-                    "Address critical risks before proceeding",
-                    "Consider alternative candidates",
+                    "在继续之前处理严重风险",
+                    "考虑其他候选人",
                 ],
             }
         elif overall_risk == "HIGH" or red_flag_count >= 2:
             return {
-                "level": "PROCEED WITH CAUTION",
-                "summary": f"{len([r for r in risks if r.severity == RiskSeverity.HIGH])} high-severity risks "
-                          f"and {red_flag_count} red flags identified. Recommend additional due diligence.",
+                "level": "谨慎继续",
+                "summary": f"识别出{len([r for r in risks if r.severity == RiskSeverity.HIGH])}个高风险和{red_flag_count}个红旗信号，建议进行额外尽职调查。",
                 "next_steps": [
-                    "Conduct thorough reference checks focusing on identified risks",
-                    "Request detailed research statement outlining independent agenda",
-                    "During interview, probe specific questions about risk areas",
-                    "Consider requesting work-in-progress papers",
+                    "进行全面的推荐人检查，重点关注已识别的风险",
+                    "要求提供详细的研究陈述，概述独立研究议程",
+                    "在面试时针对风险领域提出具体问题",
+                    "考虑要求提供在研论文",
                 ],
             }
         elif overall_risk == "MEDIUM":
             return {
-                "level": "ACCEPTABLE WITH VERIFICATION",
-                "summary": "Some concerns identified, but acceptable with additional verification.",
+                "level": "可接受（需验证）",
+                "summary": "识别出一些关注点，但经过额外验证后可接受。",
                 "next_steps": [
-                    "Standard reference checks with attention to noted concerns",
-                    "Interview should address identified risk areas",
+                    "进行常规推荐人检查，特别关注所指出的关注点",
+                    "面试应解决已识别的风险领域",
                 ],
             }
         else:
             return {
-                "level": "LOW RISK - PROCEED",
-                "summary": "No significant risks identified. Candidate appears suitable.",
+                "level": "低风险 - 可继续",
+                "summary": "未识别出显著风险，候选人似乎合适。",
                 "next_steps": [
-                    "Standard evaluation process",
-                    "Normal reference checks",
+                    "常规评估流程",
+                    "正常推荐人检查",
                 ],
             }
 
