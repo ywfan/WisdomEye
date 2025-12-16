@@ -2534,6 +2534,8 @@ def render_html(final_json_path: str) -> str:
                     {_kv("h10-index", str(academic_metrics.get("h10_index", "")))}
                     {_kv("总引用", str(academic_metrics.get("citations_total", "")))}
                     {_kv("近五年引用", str(academic_metrics.get("citations_recent", "")))}
+                    {_kv("论文总数", str(academic_metrics.get("publications_count", ""))) if academic_metrics.get("publications_count") else ""}
+                    {("<div style='margin-top: 12px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 13px; color: #856404;'>ℹ️ 数据来源: " + str(academic_metrics.get("data_source", "")) + "</div>") if academic_metrics.get("data_source") else ""}
                 </div>
             </div>
         </section>

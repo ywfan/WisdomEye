@@ -1181,6 +1181,7 @@ class ResumeJSONEnricher:
         """Attach scholar metrics using enhanced fetcher with active crawling."""
         basic = data.get("basic_info") or {}
         name = basic.get("name") or data.get("name") or ""
+        english_name = basic.get("english_name") or data.get("english_name") or ""
         if not name:
             return data
         
@@ -1191,21 +1192,39 @@ class ResumeJSONEnricher:
             # Use most recent education (first in list)
             affiliation = edu[0].get("school", "") if edu else None
         
-        # First try: search for scholar profile URL
-        rs = self.search.search(f"{name} Google Scholar", max_results=5, engines=["tavily", "bocha"]) or []
+        # Generate name variants for better Scholar profile search
+        # Import helper from authorship_analyzer
+        from utils.authorship_analyzer import AuthorshipAnalyzer
+        name_analyzer = AuthorshipAnalyzer(name, english_name=english_name if english_name else None)
+        name_variants = name_analyzer.name_variants
+        
+        print(f"[学术指标-搜索] 使用 {len(name_variants)} 个姓名变体搜索Google Scholar profile:")
+        for i, variant in enumerate(name_variants, 1):
+            print(f"  {i}. '{variant}'")
+        
+        # Try searching with each name variant
         profile_url = None
-        for r in rs:
-            u = r.get("url") or ""
-            if "scholar.google" in u and "citations" in u:
-                profile_url = u
-                break
+        for variant in name_variants:
+            print(f"[学术指标-搜索] 尝试搜索: '{variant} Google Scholar'")
+            rs = self.search.search(f"{variant} Google Scholar", max_results=5, engines=["tavily", "bocha"]) or []
+            for r in rs:
+                u = r.get("url") or ""
+                if "scholar.google" in u and "citations" in u:
+                    profile_url = u
+                    print(f"[学术指标-成功] 找到Google Scholar profile: {profile_url}")
+                    break
+            if profile_url:
+                break  # Found profile, stop searching
+        
+        if not profile_url:
+            print(f"[学术指标-警告] 未找到Google Scholar profile，将尝试直接搜索爬取")
         
         # Fetch metrics using enhanced fetcher
         # The enhanced fetcher will:
         # 1. Try direct URL if provided
         # 2. Fall back to search-and-crawl if no URL
         # 3. Parse with multiple strategies
-        print(f"[学术指标] 获取 {name} 的学术指标 (profile_url={profile_url or '无'}, affiliation={affiliation or '无'})")
+        print(f"[学术指标-获取] 开始获取学术指标 (profile_url={profile_url or '无'}, affiliation={affiliation or '无'})")
         metrics = self.scholar.run(
             name=name,
             profile_url=profile_url,
@@ -1235,9 +1254,66 @@ class ResumeJSONEnricher:
         if any(metrics.values()):
             print(f"[学术指标-成功] h-index={metrics.get('h_index','N/A')}, citations={metrics.get('citations_total','N/A')}")
         else:
-            print(f"[学术指标-警告] 未能获取到 {name} 的学术指标")
+            print(f"[学术指标-警告] 未能从Google Scholar获取学术指标，尝试从论文数据推断...")
+            # Fallback: Infer basic metrics from publication data
+            inferred_metrics = self._infer_metrics_from_publications(data)
+            if inferred_metrics:
+                for k, v in inferred_metrics.items():
+                    if v and not am.get(k):  # Only set if not already present
+                        am[k] = v
+                print(f"[学术指标-推断] 从论文推断: h-index={inferred_metrics.get('h_index','N/A')}, "
+                      f"总论文={inferred_metrics.get('publications_count','N/A')}")
+                am["data_source"] = "推断自论文列表"
+            else:
+                print(f"[学术指标-失败] 无法从Google Scholar或论文数据获取学术指标")
+                am["data_source"] = "无法获取"
         
         return data
+    
+    def _infer_metrics_from_publications(self, data: Dict[str, Any]) -> Dict[str, str]:
+        """
+        Infer basic academic metrics from publication list when Scholar data is unavailable.
+        
+        This provides a rough estimation to avoid showing completely empty metrics.
+        
+        Args:
+            data: Resume data with publications
+            
+        Returns:
+            Dictionary with inferred metrics (h_index, citations_total, publications_count)
+        """
+        publications = data.get("publications", [])
+        if not publications:
+            return {}
+        
+        # Count publications
+        pub_count = len(publications)
+        
+        # Estimate h-index using simplified formula
+        # h-index is the largest number h such that h publications have at least h citations each
+        # Without citation data, we use a conservative estimation based on publication count:
+        # - Rough formula: h-index ≈ sqrt(total_pubs) for early career researchers
+        # - This is very conservative but better than showing nothing
+        
+        import math
+        estimated_h_index = max(1, int(math.sqrt(pub_count)))
+        
+        # For conservative estimation, cap at reasonable values based on pub count
+        if pub_count < 5:
+            estimated_h_index = min(estimated_h_index, 2)
+        elif pub_count < 10:
+            estimated_h_index = min(estimated_h_index, 4)
+        elif pub_count < 20:
+            estimated_h_index = min(estimated_h_index, 6)
+        
+        # Note: We don't estimate citations_total as it's too unreliable
+        # Better to show publication count instead
+        
+        return {
+            "h_index": str(estimated_h_index),
+            "publications_count": str(pub_count),
+            # Note: citations_total intentionally omitted - too unreliable to estimate
+        }
     
     def _add_academic_benchmark(self, data: Dict[str, Any], metrics: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
