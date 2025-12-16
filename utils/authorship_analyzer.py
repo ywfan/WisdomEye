@@ -17,6 +17,11 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 import re
 from collections import Counter
+try:
+    from pypinyin import lazy_pinyin, Style
+    PYPINYIN_AVAILABLE = True
+except ImportError:
+    PYPINYIN_AVAILABLE = False
 
 
 @dataclass
@@ -87,15 +92,28 @@ class AuthorshipAnalyzer:
     Analyze authorship patterns for research independence assessment
     """
     
-    def __init__(self, candidate_name: str):
+    def __init__(self, candidate_name: str, english_name: Optional[str] = None):
         """
         Initialize analyzer
         
         Args:
-            candidate_name: Full name of the candidate
+            candidate_name: Full name of the candidate (Chinese or English)
+            english_name: Optional English name if candidate_name is Chinese
         """
         self.candidate_name = candidate_name
         self.normalized_candidate_name = self._normalize_name(candidate_name)
+        self.english_name = english_name
+        
+        # Generate name variants for better matching
+        self.name_variants = self._generate_name_variants(candidate_name, english_name)
+        
+        # Debug logging: show name variants being used
+        print(f"[姓名变体生成] 候选人: {candidate_name}")
+        if english_name:
+            print(f"[姓名变体生成] 提供的英文名: {english_name}")
+        print(f"[姓名变体生成] 生成 {len(self.name_variants)} 个姓名变体用于匹配:")
+        for i, variant in enumerate(self.name_variants, 1):
+            print(f"  {i}. '{variant}'")
     
     def analyze_publications(
         self,
@@ -142,19 +160,26 @@ class AuthorshipAnalyzer:
             total_authors_sum += num_authors
             
             # Check candidate position
-            candidate_idx = self._find_candidate_index(normalized_authors)
+            match_result = self._find_candidate_index(normalized_authors)
             
-            if candidate_idx is None:
+            if match_result is None:
                 unmatched_pubs += 1
                 # Debug: print first few unmatched cases
                 if unmatched_pubs <= 3:
                     pub_title = pub.get("title", "Unknown")[:60]
                     print(f"[作者匹配-警告] 未在论文中找到候选人: '{pub_title}...'")
-                    print(f"  候选人标准化名: '{self.normalized_candidate_name}'")
-                    print(f"  论文作者: {normalized_authors[:3]}...")
+                    print(f"  候选人姓名变体: {self.name_variants}")
+                    print(f"  论文作者列表: {normalized_authors[:5]}")
                 continue  # Candidate not in author list
             
+            candidate_idx, matched_variant = match_result
             matched_pubs += 1
+            
+            # Debug: Show successful match for first few publications
+            if matched_pubs <= 3:
+                pub_title = pub.get("title", "Unknown")[:60]
+                print(f"[作者匹配-成功] 找到候选人在论文中: '{pub_title}...'")
+                print(f"  匹配的变体: '{matched_variant}' <-> 作者: '{normalized_authors[candidate_idx]}' (位置: {candidate_idx+1}/{len(normalized_authors)})")
             
             # Position analysis
             if num_authors == 1:
@@ -256,11 +281,85 @@ class AuthorshipAnalyzer:
         normalized = re.sub(r'[^\w\s]', '', normalized)
         return normalized
     
-    def _find_candidate_index(self, normalized_authors: List[str]) -> Optional[int]:
-        """Find candidate's index in author list"""
+    def _is_chinese(self, text: str) -> bool:
+        """Check if text contains Chinese characters"""
+        return bool(re.search(r'[\u4e00-\u9fff]', text))
+    
+    def _chinese_to_pinyin(self, chinese_name: str) -> str:
+        """Convert Chinese name to pinyin"""
+        if not PYPINYIN_AVAILABLE or not chinese_name:
+            return ""
+        
+        # Get pinyin without tones
+        pinyin_parts = lazy_pinyin(chinese_name, style=Style.NORMAL)
+        
+        # Chinese names typically: 姓 + 名 (1-2 characters each)
+        # Convert to Western format: Given Name + Family Name
+        if len(pinyin_parts) >= 2:
+            # Assume first character is family name, rest is given name
+            family_name = pinyin_parts[0]
+            given_name = ''.join(pinyin_parts[1:])
+            return f"{given_name} {family_name}"
+        elif len(pinyin_parts) == 1:
+            return pinyin_parts[0]
+        
+        return ' '.join(pinyin_parts)
+    
+    def _generate_name_variants(self, name: str, english_name: Optional[str] = None) -> List[str]:
+        """
+        Generate multiple name variants for matching
+        
+        Returns list of normalized name variants:
+        - Original name
+        - English name (if provided)
+        - Pinyin conversion (if Chinese)
+        - Reversed name order (for Western vs Chinese order)
+        """
+        variants = [self._normalize_name(name)]
+        
+        # Add English name if provided
+        if english_name:
+            variants.append(self._normalize_name(english_name))
+        
+        # If Chinese name, try to convert to pinyin
+        if self._is_chinese(name) and PYPINYIN_AVAILABLE:
+            pinyin_name = self._chinese_to_pinyin(name)
+            if pinyin_name:
+                variants.append(self._normalize_name(pinyin_name))
+                # Also add reversed order
+                parts = pinyin_name.split()
+                if len(parts) == 2:
+                    variants.append(self._normalize_name(f"{parts[1]} {parts[0]}"))
+        
+        # If English name, also try reversed order
+        if not self._is_chinese(name):
+            parts = name.split()
+            if len(parts) >= 2:
+                # Try reversing (e.g., "John Smith" -> "Smith John")
+                variants.append(self._normalize_name(' '.join(reversed(parts))))
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_variants = []
+        for v in variants:
+            if v and v not in seen:
+                seen.add(v)
+                unique_variants.append(v)
+        
+        return unique_variants
+    
+    def _find_candidate_index(self, normalized_authors: List[str]) -> Optional[Tuple[int, str]]:
+        """
+        Find candidate's index in author list using all name variants
+        
+        Returns:
+            Tuple of (index, matched_variant) if found, None otherwise
+        """
         for i, author in enumerate(normalized_authors):
-            if self._names_match(author, self.normalized_candidate_name):
-                return i
+            # Try matching against all name variants
+            for variant in self.name_variants:
+                if self._names_match(author, variant):
+                    return (i, variant)
         return None
     
     def _names_match(self, name1: str, name2: str) -> bool:
@@ -315,8 +414,10 @@ class AuthorshipAnalyzer:
         corresponding = pub.get("corresponding_author", "")
         if corresponding:
             normalized_corresponding = self._normalize_name(corresponding)
-            if self._names_match(normalized_corresponding, self.normalized_candidate_name):
-                return True
+            # Check against all name variants
+            for variant in self.name_variants:
+                if self._names_match(normalized_corresponding, variant):
+                    return True
         
         # Heuristic: in some fields, last author is corresponding
         # (But we can't assume this universally, so we don't auto-assign)
@@ -546,19 +647,21 @@ class AuthorshipAnalyzer:
 # Convenience function
 def analyze_authorship(
     candidate_name: str,
-    publications: List[Dict[str, Any]]
+    publications: List[Dict[str, Any]],
+    english_name: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Quick authorship analysis
     
     Args:
-        candidate_name: Candidate's full name
+        candidate_name: Candidate's full name (Chinese or English)
         publications: List of publications
+        english_name: Optional English name if candidate_name is Chinese
         
     Returns:
         Comprehensive authorship analysis report
     """
-    analyzer = AuthorshipAnalyzer(candidate_name)
+    analyzer = AuthorshipAnalyzer(candidate_name, english_name=english_name)
     metrics = analyzer.analyze_publications(publications)
     report = analyzer.generate_analysis_report(metrics)
     

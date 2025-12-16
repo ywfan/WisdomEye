@@ -1557,8 +1557,14 @@ class ResumeJSONEnricher:
         # Phase 2: Add authorship pattern analysis
         print("[作者贡献分析] 开始分析作者模式...")
         candidate_name = data.get("basic_info", {}).get("name", "") or data.get("name", "")
+        english_name = data.get("basic_info", {}).get("english_name", "") or data.get("english_name", "")
         if candidate_name:
-            authorship_report = analyze_authorship(candidate_name, data.get("publications", []))
+            print(f"[作者贡献分析-姓名] 候选人: {candidate_name}, 英文名: {english_name or '(未提供)'}")
+            authorship_report = analyze_authorship(
+                candidate_name, 
+                data.get("publications", []),
+                english_name=english_name if english_name else None
+            )
             final_obj["authorship_analysis"] = authorship_report
             independence_score = authorship_report.get("metrics", {}).get("independence_score", 0)
             print(f"[作者贡献分析-完成] 独立性得分: {independence_score:.2f}, "
