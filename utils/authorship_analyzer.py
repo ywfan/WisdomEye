@@ -126,6 +126,8 @@ class AuthorshipAnalyzer:
         total_authors_sum = 0
         
         # Analyze each publication
+        matched_pubs = 0
+        unmatched_pubs = 0
         for pub in publications:
             authors = pub.get("authors", [])
             if not authors or not isinstance(authors, list):
@@ -143,7 +145,16 @@ class AuthorshipAnalyzer:
             candidate_idx = self._find_candidate_index(normalized_authors)
             
             if candidate_idx is None:
-                continue  # Candidate not in author list (should not happen)
+                unmatched_pubs += 1
+                # Debug: print first few unmatched cases
+                if unmatched_pubs <= 3:
+                    pub_title = pub.get("title", "Unknown")[:60]
+                    print(f"[作者匹配-警告] 未在论文中找到候选人: '{pub_title}...'")
+                    print(f"  候选人标准化名: '{self.normalized_candidate_name}'")
+                    print(f"  论文作者: {normalized_authors[:3]}...")
+                continue  # Candidate not in author list
+            
+            matched_pubs += 1
             
             # Position analysis
             if num_authors == 1:
@@ -187,6 +198,11 @@ class AuthorshipAnalyzer:
             coauthor_diversity=unique_coauthors,
             total_pubs=total_pubs,
         )
+        
+        # Log analysis summary
+        print(f"[作者贡献分析-统计] 总论文: {total_pubs}, 匹配: {matched_pubs}, 未匹配: {unmatched_pubs}")
+        print(f"  第一作者: {first_author_count}/{total_pubs} ({first_author_rate:.1%})")
+        print(f"  独立性得分: {independence_score:.3f}")
         
         return AuthorshipMetrics(
             total_publications=total_pubs,
@@ -252,6 +268,12 @@ class AuthorshipAnalyzer:
         if name1 == name2:
             return True
         
+        # Check substring match (e.g., "smith" in "john smith")
+        if name1 in name2 or name2 in name1:
+            # Ensure it's not just a partial word match
+            if len(name1) > 3 or len(name2) > 3:
+                return True
+        
         # Check if one is a substring of the other (handles abbreviations)
         # e.g., "j smith" matches "john smith"
         parts1 = name1.split()
@@ -259,8 +281,19 @@ class AuthorshipAnalyzer:
         
         # If same number of parts, check each part
         if len(parts1) == len(parts2):
-            matches = sum(1 for p1, p2 in zip(parts1, parts2) if p1 == p2 or p1[0] == p2[0])
+            matches = sum(1 for p1, p2 in zip(parts1, parts2) if p1 == p2 or (p1 and p2 and p1[0] == p2[0]))
             return matches >= len(parts1) - 1  # Allow one mismatch
+        
+        # Different number of parts - check if all parts of shorter name are in longer name
+        shorter_parts = parts1 if len(parts1) < len(parts2) else parts2
+        longer_parts = parts2 if len(parts1) < len(parts2) else parts1
+        
+        # Check if all parts of shorter name match some parts in longer name
+        if shorter_parts and all(
+            any(sp == lp or (sp and lp and sp[0] == lp[0]) for lp in longer_parts)
+            for sp in shorter_parts
+        ):
+            return True
         
         return False
     

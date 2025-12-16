@@ -37,6 +37,12 @@ def _url_link(url: str, text: str = None, max_length: int = 80) -> str:
     if not url:
         return ""
     
+    # Security: Validate URL scheme to prevent javascript: injection and other attacks
+    url_lower = url.lower()
+    if not url_lower.startswith(('http://', 'https://', '//', 'mailto:')):
+        # For non-standard URLs, just return escaped text without link
+        return _esc(url)
+    
     # Escape URL for safe HTML embedding
     url_clean = _esc(url)
     
@@ -554,7 +560,7 @@ def render_html(final_json_path: str) -> str:
     risk_html = ""
     if risk_assessment:
         summary = risk_assessment.get("summary", {})
-        categories = risk_assessment.get("risk_categories", {})
+        risks_by_severity = risk_assessment.get("risks", {})
         
         # Summary card
         risk_html += "<div class='card risk-summary-card'>"
@@ -566,25 +572,45 @@ def render_html(final_json_path: str) -> str:
         risk_html += f"<div class='risk-stat low'><span class='num'>{summary.get('low_count', 0)}</span><span class='label'>低风险</span></div>"
         risk_html += "</div></div>"
         
-        # Risk category cards
-        for cat_name, cat_data in categories.items():
-            if isinstance(cat_data, dict) and cat_data.get("risks"):
+        # Display risks by severity level
+        severity_labels = {
+            "critical": ("🔴 严重风险", "CRITICAL"),
+            "high": ("🟠 高风险", "HIGH"),
+            "medium": ("🟡 中风险", "MEDIUM"),
+            "low": ("🟢 低风险", "LOW")
+        }
+        
+        for severity_key, (severity_label, severity_val) in severity_labels.items():
+            risk_list = risks_by_severity.get(severity_key, [])
+            if risk_list:
                 risk_html += f"<div class='card risk-category-card'>"
-                risk_html += f"<div class='card-title'>{_esc(cat_name)}</div>"
-                for risk in cat_data.get("risks", [])[:5]:  # Show top 5
-                    severity = risk.get("severity", "LOW")
-                    desc = risk.get("description", "")
-                    evidence = risk.get("evidence", "")
+                risk_html += f"<div class='card-title'>{severity_label}</div>"
+                
+                for risk in risk_list[:5]:  # Show top 5 per severity
+                    title = risk.get("title", "")
+                    detail = risk.get("detail", "")
+                    implication = risk.get("implication", "")
+                    mitigation = risk.get("mitigation", [])
+                    category = risk.get("category", "")
                     
-                    severity_class = severity.lower()
-                    severity_badge = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🟢"}.get(severity, "⚪")
-                    
-                    risk_html += f"<div class='risk-item {severity_class}'>"
-                    risk_html += f"<div class='risk-header'><span class='badge'>{severity_badge} {severity}</span></div>"
-                    risk_html += f"<div class='risk-desc'>{_esc(desc)}</div>"
-                    if evidence:
-                        risk_html += f"<div class='risk-evidence'>📊 {_esc(evidence)}</div>"
+                    risk_html += f"<div class='risk-item {severity_key}'>"
+                    risk_html += f"<div class='risk-header'>"
+                    risk_html += f"<span class='badge'>{severity_val}</span>"
+                    if category:
+                        risk_html += f"<span class='category-tag'>{_esc(category)}</span>"
+                    risk_html += f"</div>"
+                    risk_html += f"<div class='risk-title'><strong>{_esc(title)}</strong></div>"
+                    if detail:
+                        risk_html += f"<div class='risk-desc'>📊 {_esc(detail)}</div>"
+                    if implication:
+                        risk_html += f"<div class='risk-implication'>⚠️ {_esc(implication)}</div>"
+                    if mitigation:
+                        risk_html += "<div class='risk-mitigation'>💡 <strong>建议措施:</strong><ul>"
+                        for m in mitigation[:3]:
+                            risk_html += f"<li>{_esc(m)}</li>"
+                        risk_html += "</ul></div>"
                     risk_html += "</div>"
+                
                 risk_html += "</div>"
     
     # ========== Phase 2: Authorship Analysis HTML ==========
@@ -1790,9 +1816,53 @@ def render_html(final_json_path: str) -> str:
         background: rgba(255, 255, 255, 0.9);
     }
     
+    .risk-title {
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: 0.5rem;
+    }
+    
     .risk-desc {
         color: var(--color-text);
         line-height: 1.5;
+        margin-bottom: 0.5rem;
+    }
+    
+    .risk-implication {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        background: rgba(255, 140, 0, 0.1);
+        font-size: 0.875rem;
+        color: #c05621;
+        line-height: 1.5;
+    }
+    
+    .risk-mitigation {
+        margin-top: 0.75rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        background: rgba(34, 197, 94, 0.1);
+        font-size: 0.875rem;
+    }
+    
+    .risk-mitigation ul {
+        margin: 0.5rem 0 0 1.25rem;
+        padding: 0;
+    }
+    
+    .risk-mitigation li {
+        margin: 0.25rem 0;
+        line-height: 1.5;
+    }
+    
+    .category-tag {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        background: rgba(99, 102, 241, 0.1);
+        color: #4f46e5;
+        margin-left: 0.5rem;
     }
     
     .risk-evidence {
