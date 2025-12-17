@@ -380,8 +380,24 @@ class AuthorshipAnalyzer:
         
         # If same number of parts, check each part
         if len(parts1) == len(parts2):
-            matches = sum(1 for p1, p2 in zip(parts1, parts2) if p1 == p2 or (p1 and p2 and p1[0] == p2[0]))
-            return matches >= len(parts1) - 1  # Allow one mismatch
+            # Count full matches and initial matches separately
+            full_matches = sum(1 for p1, p2 in zip(parts1, parts2) if p1 == p2)
+            initial_matches = sum(1 for p1, p2 in zip(parts1, parts2) if p1 and p2 and p1[0] == p2[0])
+            
+            # Require: at least one full match OR all initials match (for abbreviations)
+            # This prevents false positives like "ting lin" matching "qianxiao li"
+            if full_matches >= 1:  # At least one full name part matches
+                return initial_matches >= len(parts1) - 1  # Allow one mismatch
+            elif initial_matches == len(parts1) and len(parts1) >= 2:  # All initials match (e.g., "j smith" vs "john smith")
+                return True
+            
+            # Special case: check reversed order for Chinese vs Western name order
+            # e.g., "lin ting" (Chinese order) vs "ting lin" (Western order)
+            if len(parts1) == 2 and len(parts2) == 2:
+                if parts1[0] == parts2[1] and parts1[1] == parts2[0]:
+                    return True
+            
+            return False
         
         # Different number of parts - check if all parts of shorter name are in longer name
         shorter_parts = parts1 if len(parts1) < len(parts2) else parts2
