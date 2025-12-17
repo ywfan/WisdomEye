@@ -1239,9 +1239,11 @@ class ResumeJSONEnricher:
         
         # Add profile URL to sources if found
         if profile_url:
+            am["profile_url"] = profile_url  # Store in academic_metrics for later aggregation
             srcs = data.get("profile_sources") or []
             srcs.append(profile_url)
             data["profile_sources"] = list(dict.fromkeys(srcs))
+            print(f"[学术指标-来源] 已添加Google Scholar profile到参考来源")
         
         # Phase 1: Add academic benchmarking
         if metrics.get("h_index") and metrics.get("citations_total"):
@@ -1313,6 +1315,132 @@ class ResumeJSONEnricher:
             "h_index": str(estimated_h_index),
             "publications_count": str(pub_count),
             # Note: citations_total intentionally omitted - too unreliable to estimate
+        }
+    
+    def _aggregate_reference_sources(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Aggregate all reference sources from different parts of the resume data.
+        
+        Collects URLs from:
+        - Existing profile_sources
+        - Publications (urls, venues)
+        - Awards and honors
+        - Social media profiles
+        - Projects and grants
+        - Any other sources with URLs
+        
+        Args:
+            data: Complete resume data
+            
+        Returns:
+            Dictionary with aggregated sources and statistics
+        """
+        all_sources = []
+        
+        # 1. Existing profile_sources
+        existing_sources = data.get("profile_sources", [])
+        if existing_sources:
+            all_sources.extend([s for s in existing_sources if s])
+        
+        # 2. Publications
+        publications = data.get("publications", [])
+        pub_count = 0
+        for pub in publications:
+            if not isinstance(pub, dict):
+                continue
+            # Publication URL
+            url = pub.get("url", "")
+            if url:
+                all_sources.append(url)
+                pub_count += 1
+            # Venue/conference URL (if different)
+            venue_url = pub.get("venue_url", "")
+            if venue_url and venue_url != url:
+                all_sources.append(venue_url)
+        
+        # 3. Social media profiles
+        social_presence = data.get("social_presence", [])
+        social_count = 0
+        for profile in social_presence:
+            if not isinstance(profile, dict):
+                continue
+            url = profile.get("url", "")
+            if url:
+                all_sources.append(url)
+                social_count += 1
+        
+        # 4. Awards and honors
+        awards = data.get("awards", [])
+        for award in awards:
+            if not isinstance(award, dict):
+                continue
+            url = award.get("url", "") or award.get("source", "")
+            if url:
+                all_sources.append(url)
+        
+        honors = data.get("honors", [])
+        for honor in honors:
+            if not isinstance(honor, dict):
+                continue
+            url = honor.get("url", "") or honor.get("source", "")
+            if url:
+                all_sources.append(url)
+        
+        # 5. Projects
+        projects = data.get("projects", [])
+        for project in projects:
+            if not isinstance(project, dict):
+                continue
+            url = project.get("url", "")
+            if url:
+                all_sources.append(url)
+        
+        # 6. Grants
+        grants = data.get("grants", [])
+        for grant in grants:
+            if not isinstance(grant, dict):
+                continue
+            url = grant.get("url", "")
+            if url:
+                all_sources.append(url)
+        
+        # 7. Open source contributions
+        open_source = data.get("open_source", [])
+        for contrib in open_source:
+            if not isinstance(contrib, dict):
+                continue
+            url = contrib.get("url", "")
+            if url:
+                all_sources.append(url)
+        
+        # 8. Academic metrics source (Google Scholar profile)
+        basic_info = data.get("basic_info", {})
+        academic_metrics = basic_info.get("academic_metrics", {})
+        scholar_profile = academic_metrics.get("profile_url", "")
+        if scholar_profile:
+            all_sources.append(scholar_profile)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_sources = []
+        for source in all_sources:
+            # Clean and normalize URL
+            source_clean = str(source).strip()
+            if source_clean and source_clean not in seen:
+                seen.add(source_clean)
+                unique_sources.append(source_clean)
+        
+        # Calculate statistics
+        other_count = len(unique_sources) - pub_count - social_count
+        
+        return {
+            "urls": unique_sources,
+            "statistics": {
+                "total_sources": len(unique_sources),
+                "publication_sources": pub_count,
+                "social_sources": social_count,
+                "other_sources": max(0, other_count)
+            }
         }
     
     def _add_academic_benchmark(self, data: Dict[str, Any], metrics: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -1713,6 +1841,16 @@ class ResumeJSONEnricher:
         except Exception as e:
             print(f"[产出时间线分析-错误] {str(e)}")
             final_obj["productivity_timeline"] = {"error": str(e)}
+        
+        # Aggregate all reference sources
+        print("[参考来源汇总] 开始收集所有参考来源...")
+        aggregated_sources = self._aggregate_reference_sources(final_obj)
+        final_obj["profile_sources"] = aggregated_sources["urls"]
+        final_obj["source_statistics"] = aggregated_sources["statistics"]
+        print(f"[参考来源汇总-完成] 共收集 {aggregated_sources['statistics']['total_sources']} 个来源 "
+              f"(论文: {aggregated_sources['statistics']['publication_sources']}, "
+              f"社交: {aggregated_sources['statistics']['social_sources']}, "
+              f"其他: {aggregated_sources['statistics']['other_sources']})")
         
         out_path = p.parent / "resume_final.json"
         out_path.write_text(json.dumps(final_obj, ensure_ascii=False, indent=2), encoding="utf-8")
