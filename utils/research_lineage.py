@@ -53,6 +53,18 @@ class ResearchLineageAnalyzer:
         """
         logger.info("Starting research lineage analysis...")
         
+        # Data validation
+        publications = resume_data.get("publications", []) or resume_data.get("Publications", [])
+        if not publications:
+            logger.warning("[研究脉络-数据不足] 无论文数据，返回空分析")
+            return self._empty_result("无论文数据")
+        
+        pub_count = len(publications) if isinstance(publications, list) else 0
+        logger.info(f"[研究脉络-数据验证] 找到 {pub_count} 篇论文")
+        
+        if pub_count < 2:
+            logger.warning(f"[研究脉络-数据不足] 论文数量不足 ({pub_count} < 2)，分析结果可能不准确")
+        
         result = {
             "academic_lineage": self._analyze_academic_lineage(resume_data),
             "research_trajectory": self._analyze_research_trajectory(resume_data),
@@ -62,7 +74,11 @@ class ResearchLineageAnalyzer:
             "continuity_score": 0.0,
             "coherence_assessment": "",
             "research_maturity": "",
-            "lineage_strength": ""
+            "lineage_strength": "",
+            "data_quality": {
+                "publications_count": pub_count,
+                "has_sufficient_data": pub_count >= 3
+            }
         }
         
         # Calculate overall scores
@@ -71,8 +87,28 @@ class ResearchLineageAnalyzer:
         result["research_maturity"] = self._assess_maturity(result)
         result["lineage_strength"] = self._assess_lineage_strength(result)
         
-        logger.info("Research lineage analysis completed")
+        logger.info(f"[研究脉络-完成] 连续性得分: {result['continuity_score']:.2f}, "
+                   f"研究成熟度: {result['research_maturity']}")
         return result
+    
+    def _empty_result(self, reason: str) -> Dict[str, Any]:
+        """Return empty result with explanation"""
+        return {
+            "academic_lineage": {},
+            "research_trajectory": {},
+            "topic_evolution": {},
+            "collaboration_lineage": {},
+            "impact_trajectory": {},
+            "continuity_score": 0.0,
+            "coherence_assessment": f"无法评估 - {reason}",
+            "research_maturity": "未知",
+            "lineage_strength": "未知",
+            "data_quality": {
+                "publications_count": 0,
+                "has_sufficient_data": False,
+                "reason": reason
+            }
+        }
     
     def _analyze_academic_lineage(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -90,7 +126,7 @@ class ResearchLineageAnalyzer:
             "divergence_topics": []
         }
         
-        education = data.get("education", []) or data.get("Education", [])
+        education = data.get("education") or data.get("Education") or []
         publications = data.get("publications", []) or data.get("Publications", [])
         network = data.get("network_graph", {})
         
@@ -374,7 +410,7 @@ class ResearchLineageAnalyzer:
     
     def _get_phd_year(self, data: Dict[str, Any]) -> Optional[int]:
         """Get PhD completion year"""
-        education = data.get("education", []) or data.get("Education", [])
+        education = data.get("education") or data.get("Education") or []
         for edu in education:
             if not isinstance(edu, dict):
                 continue
@@ -1095,54 +1131,99 @@ class ResearchLineageAnalyzer:
         score = 0.0
         weights = []
         
+        logger.info("[研究脉络-得分计算] 开始计算连续性得分...")
+        
         # Factor 1: Topic consistency
         trajectory = analysis_result.get("research_trajectory", {})
         consistency = trajectory.get("consistency_level", "Unknown")
+        logger.info(f"[研究脉络-得分计算] 一致性水平: {consistency}")
         
-        if "Highly Consistent" in consistency:
+        if "Highly Consistent" in consistency or "高度一致" in consistency:
             score += 0.9
-        elif "Moderately Consistent" in consistency:
+            weights.append(1.0)
+            logger.info("[研究脉络-得分计算] 一致性因子: 0.9 (高度一致)")
+        elif "Moderately Consistent" in consistency or "中等一致" in consistency:
             score += 0.6
-        elif "Exploratory" in consistency:
+            weights.append(1.0)
+            logger.info("[研究脉络-得分计算] 一致性因子: 0.6 (中等一致)")
+        elif "Exploratory" in consistency or "探索性" in consistency:
             score += 0.3
-        weights.append(1.0)
+            weights.append(1.0)
+            logger.info("[研究脉络-得分计算] 一致性因子: 0.3 (探索性)")
+        elif consistency != "Unknown":
+            # Unknown or other: give a neutral score based on available data
+            score += 0.4
+            weights.append(0.5)
+            logger.info(f"[研究脉络-得分计算] 一致性因子: 0.4 (其他: {consistency})")
         
         # Factor 2: Sustained topics ratio
         topic_evolution = analysis_result.get("topic_evolution", {})
         sustained = len(topic_evolution.get("sustained_topics", []))
-        total_topics = sustained + len(topic_evolution.get("emerging_topics", [])) + len(topic_evolution.get("abandoned_topics", []))
+        emerging = len(topic_evolution.get("emerging_topics", []))
+        abandoned = len(topic_evolution.get("abandoned_topics", []))
+        total_topics = sustained + emerging + abandoned
+        
+        logger.info(f"[研究脉络-得分计算] 主题统计: 持续={sustained}, 新兴={emerging}, 放弃={abandoned}, 总计={total_topics}")
         
         if total_topics > 0:
             sustained_ratio = sustained / total_topics
             score += sustained_ratio
             weights.append(1.0)
+            logger.info(f"[研究脉络-得分计算] 持续主题比例因子: {sustained_ratio:.2f}")
+        elif total_topics == 0:
+            # No topic analysis available - use minimal score
+            logger.info("[研究脉络-得分计算] 无主题数据，跳过持续主题因子")
         
         # Factor 3: Collaboration stability
         collab_lineage = analysis_result.get("collaboration_lineage", {})
         network_expansion = collab_lineage.get("network_expansion", "Unknown")
+        logger.info(f"[研究脉络-得分计算] 网络扩展: {network_expansion}")
         
-        if "Stable" in network_expansion or "Steadily" in network_expansion:
+        if "Stable" in network_expansion or "Steadily" in network_expansion or "稳定" in network_expansion:
             score += 0.8
-        elif "Rapidly" in network_expansion:
+            weights.append(0.5)
+            logger.info("[研究脉络-得分计算] 合作稳定性因子: 0.8")
+        elif "Rapidly" in network_expansion or "快速" in network_expansion:
             score += 0.5
-        weights.append(0.5)
+            weights.append(0.5)
+            logger.info("[研究脉络-得分计算] 合作稳定性因子: 0.5")
+        elif network_expansion != "Unknown":
+            score += 0.4
+            weights.append(0.3)
+            logger.info(f"[研究脉络-得分计算] 合作稳定性因子: 0.4 (其他: {network_expansion})")
         
         # Weighted average
         total_weight = sum(weights)
-        return round(score / total_weight, 2) if total_weight > 0 else 0.0
+        final_score = round(score / total_weight, 2) if total_weight > 0 else 0.0
+        
+        logger.info(f"[研究脉络-得分计算] 最终得分: {final_score:.2f} (总分: {score:.2f}, 总权重: {total_weight:.2f})")
+        
+        # If score is still 0 but we have some data, give a minimal baseline score
+        if final_score == 0.0 and analysis_result.get("data_quality", {}).get("publications_count", 0) > 0:
+            final_score = 0.1  # Minimal baseline for having any publications
+            logger.info(f"[研究脉络-得分计算] 应用基线得分: {final_score:.2f}")
+        
+        return final_score
     
     def _assess_coherence(self, analysis_result: Dict[str, Any]) -> str:
         """Assess overall research coherence"""
         continuity_score = analysis_result.get("continuity_score", 0)
+        pub_count = analysis_result.get("data_quality", {}).get("publications_count", 0)
+        
+        logger.info(f"[研究脉络-连贯性评估] 连续性得分: {continuity_score:.2f}, 论文数: {pub_count}")
         
         if continuity_score >= 0.8:
-            return "Highly Coherent - Clear, consistent research program with strong thematic unity"
+            return "高度连贯 - 清晰一致的研究项目，主题统一性强"
         elif continuity_score >= 0.6:
-            return "Coherent - Well-defined research direction with controlled exploration"
+            return "连贯 - 研究方向明确，有控制的探索"
         elif continuity_score >= 0.4:
-            return "Moderately Coherent - Multiple research threads with some connection"
+            return "中等连贯 - 多个研究线索，有一定联系"
+        elif continuity_score >= 0.2:
+            return "探索性 - 多样化的研究兴趣，缺乏明确的统一主题"
+        elif pub_count >= 2:
+            return "数据不足 - 论文数量有限，难以评估连贯性"
         else:
-            return "Exploratory - Diverse research interests without clear unifying theme"
+            return "无法评估 - 无足够数据"
     
     def _assess_maturity(self, analysis_result: Dict[str, Any]) -> str:
         """Assess research maturity level"""
@@ -1155,28 +1236,49 @@ class ResearchLineageAnalyzer:
         collab = analysis_result.get("collaboration_lineage", {})
         independence = collab.get("independence_trajectory", "Unknown")
         
+        # Check data quality
+        data_quality = analysis_result.get("data_quality", {})
+        pub_count = data_quality.get("publications_count", 0)
+        
+        logger.info(f"[研究脉络-成熟度评估] 职业阶段: {len(stages)}, 影响趋势: {impact_trend}, 独立性: {independence}, 论文数: {pub_count}")
+        
         # Maturity indicators
         maturity_score = 0
+        max_score = 3
         
         # Multiple career stages covered
         if len(stages) >= 3:
             maturity_score += 1
+        elif len(stages) >= 2:
+            maturity_score += 0.5
         
         # Increasing or stable impact
-        if "Increasing" in impact_trend or "Stable" in impact_trend:
+        if "Increasing" in impact_trend or "Stable" in impact_trend or "增长" in impact_trend or "稳定" in impact_trend:
             maturity_score += 1
+        elif impact_trend != "Unknown":
+            maturity_score += 0.3
         
         # Increasing independence
-        if "Increasing Independence" in independence:
+        if "Increasing Independence" in independence or "增强独立性" in independence:
             maturity_score += 1
+        elif "Stable" in independence or "稳定" in independence:
+            maturity_score += 0.5
         
         # Assessment
-        if maturity_score >= 3:
-            return "Mature - Established independent researcher with sustained impact"
-        elif maturity_score >= 2:
-            return "Developing - Emerging researcher showing growth trajectory"
+        logger.info(f"[研究脉络-成熟度评估] 成熟度得分: {maturity_score}/{max_score}")
+        
+        if maturity_score >= 2.5:
+            return "成熟 - 已建立的独立研究者，影响力持续"
+        elif maturity_score >= 1.5:
+            return "发展中 - 新兴研究者，呈现增长轨迹"
+        elif maturity_score >= 0.5:
+            return "早期阶段 - 正在建立研究基础"
+        elif pub_count >= 5:
+            return "有一定积累 - 已有多篇论文，研究方向待明确"
+        elif pub_count >= 2:
+            return "初期 - 论文数量较少，研究轨迹尚不明显"
         else:
-            return "Early Stage - Building research foundation"
+            return "未知 - 数据不足"
     
     def _assess_lineage_strength(self, analysis_result: Dict[str, Any]) -> str:
         """Assess strength of academic lineage"""
