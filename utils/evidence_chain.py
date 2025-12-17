@@ -164,82 +164,202 @@ class EvidenceChainBuilder:
     
     def _extract_claims_with_llm(self, text: str, dimension: str) -> List[Claim]:
         """Extract claims using LLM"""
-        prompt = f"""将以下评价拆分为独立的、可验证的观点（claims）。
+        
+        # Enhanced prompt with few-shot examples and stricter instructions
+        prompt = f"""任务：从评价文本中提取独立的、可验证的观点（claims）。
 
 评价文本（维度: {dimension}）：
 {text}
 
-要求：
-1. 每个claim应该是一个独立的、具体的陈述
-2. 应该是可以被简历数据验证的事实性陈述
-3. 输出JSON数组格式
+指令：
+1. 每个claim必须是独立的、具体的陈述
+2. 每个claim应该基于事实，可以通过简历数据验证
+3. 提取3-5个最重要的claims
+4. 必须严格输出JSON数组格式，不要任何其他文字
 
-示例输出：
-[
-    {{"text": "候选人在Transformer理论逼近方面有重要贡献", "type": "achievement"}},
-    {{"text": "提出了新型有限元构造方法", "type": "achievement"}},
-    {{"text": "与产业界保持紧密合作", "type": "collaboration"}}
+claim类型说明：
+- achievement: 成果、贡献、发表
+- skill: 技能、能力、专长
+- impact: 影响力、知名度、引用
+- collaboration: 合作、协作、团队
+- experience: 经验、经历、背景
+
+Few-shot示例：
+
+输入1: "候选人在深度学习理论方面有显著贡献，发表了10篇顶会论文，h-index达到15，与5个国家的研究者合作。"
+输出1: [
+  {{"text": "在深度学习理论方面有显著贡献", "type": "achievement"}},
+  {{"text": "发表了10篇顶会论文", "type": "achievement"}},
+  {{"text": "h-index达到15", "type": "impact"}},
+  {{"text": "与5个国家的研究者合作", "type": "collaboration"}}
 ]
 
-输出（仅JSON，不要其他内容）："""
+输入2: "具备将数学理论应用于实际工程问题的能力，在华为2012实验室工作，参与了多个核心项目。"
+输出2: [
+  {{"text": "具备将数学理论应用于实际工程问题的能力", "type": "skill"}},
+  {{"text": "在华为2012实验室工作", "type": "experience"}},
+  {{"text": "参与了多个核心项目", "type": "experience"}}
+]
+
+现在处理上述评价文本，仅输出JSON数组："""
         
         try:
+            # Use LLM to extract claims
             response = self.llm.chat([
-                {"role": "system", "content": "你是一个专业的文本分析助手，擅长提取关键观点。"},
+                {"role": "system", "content": "你是专业的学术文本分析助手，擅长提取和分类关键观点。必须严格遵守JSON格式输出要求。"},
                 {"role": "user", "content": prompt}
             ])
             
+            # Clean response (remove markdown code blocks if present)
+            response_clean = response.strip()
+            if response_clean.startswith("```"):
+                # Remove ```json or ``` markers
+                lines = response_clean.split('\n')
+                response_clean = '\n'.join(lines[1:-1]) if len(lines) > 2 else response_clean
+                response_clean = response_clean.strip()
+            
             # Parse JSON response
-            claims_data = json.loads(response)
+            claims_data = json.loads(response_clean)
+            
+            # Validate structure
+            if not isinstance(claims_data, list):
+                raise ValueError(f"LLM返回的不是数组: {type(claims_data)}")
             
             claims = []
             for item in claims_data:
+                if not isinstance(item, dict):
+                    continue
+                
+                claim_text = item.get("text", "").strip()
+                if not claim_text or len(claim_text) < 5:
+                    continue
+                
                 claim = Claim(
-                    text=item.get("text", ""),
+                    text=claim_text,
                     dimension=dimension,
                     claim_type=item.get("type", "general"),
-                    confidence=0.8  # Initial confidence
+                    confidence=0.85  # Higher confidence for LLM extraction with few-shot
                 )
                 claims.append(claim)
             
-            return claims
+            if claims:
+                print(f"[证据链-成功] LLM提取了 {len(claims)} 个claims（维度: {dimension}）")
+                return claims
+            else:
+                print(f"[证据链-警告] LLM返回空结果，使用启发式方法（维度: {dimension}）")
+                return self._extract_claims_heuristic(text, dimension)
             
+        except json.JSONDecodeError as e:
+            print(f"[证据链-警告] JSON解析失败: {e}，响应内容: {response[:200]}...")
+            print(f"[证据链-回退] 使用启发式方法（维度: {dimension}）")
+            return self._extract_claims_heuristic(text, dimension)
         except Exception as e:
-            print(f"[证据链-警告] LLM提取claims失败: {e}，使用启发式方法")
+            print(f"[证据链-警告] LLM提取claims失败: {e}，使用启发式方法（维度: {dimension}）")
             return self._extract_claims_heuristic(text, dimension)
     
     def _extract_claims_heuristic(self, text: str, dimension: str) -> List[Claim]:
-        """Extract claims using heuristic rules"""
+        """Extract claims using enhanced heuristic rules"""
         claims = []
         
-        # Split by sentences
+        # Split by Chinese sentence delimiters
         sentences = re.split(r'[。！？；]', text)
+        
+        # Keywords for different claim types (enhanced)
+        achievement_keywords = ["贡献", "提出", "研究", "发表", "开发", "突破", "创新", "论文", "专利", "获奖", "成果"]
+        skill_keywords = ["能力", "擅长", "掌握", "精通", "熟练", "具备", "经验"]
+        impact_keywords = ["影响", "引用", "知名", "认可", "h-index", "citations", "顶级", "领域"]
+        collaboration_keywords = ["合作", "协作", "团队", "共同", "联合", "网络"]
+        experience_keywords = ["工作", "任职", "担任", "参与", "项目", "实习", "经历"]
         
         for sentence in sentences:
             sentence = sentence.strip()
             if len(sentence) < 10:  # Too short to be meaningful
                 continue
             
+            # Skip overly long sentences (likely to be compound statements)
+            if len(sentence) > 200:
+                # Try to split by commas for compound sentences
+                sub_sentences = re.split(r'[，、]', sentence)
+                for sub in sub_sentences:
+                    sub = sub.strip()
+                    if 10 < len(sub) < 150:
+                        claim_type = self._classify_claim_type(
+                            sub, 
+                            achievement_keywords, 
+                            skill_keywords, 
+                            impact_keywords, 
+                            collaboration_keywords,
+                            experience_keywords
+                        )
+                        claims.append(Claim(
+                            text=sub,
+                            dimension=dimension,
+                            claim_type=claim_type,
+                            confidence=0.65  # Slightly lower for sub-sentences
+                        ))
+                continue
+            
             # Determine claim type based on keywords
-            claim_type = "general"
-            if any(kw in sentence for kw in ["贡献", "提出", "研究", "发表", "开发"]):
-                claim_type = "achievement"
-            elif any(kw in sentence for kw in ["合作", "协作", "团队"]):
-                claim_type = "collaboration"
-            elif any(kw in sentence for kw in ["影响", "引用", "知名"]):
-                claim_type = "impact"
-            elif any(kw in sentence for kw in ["能力", "擅长", "掌握"]):
-                claim_type = "skill"
+            claim_type = self._classify_claim_type(
+                sentence, 
+                achievement_keywords, 
+                skill_keywords, 
+                impact_keywords, 
+                collaboration_keywords,
+                experience_keywords
+            )
             
             claim = Claim(
                 text=sentence,
                 dimension=dimension,
                 claim_type=claim_type,
-                confidence=0.7  # Lower confidence for heuristic extraction
+                confidence=0.7  # Moderate confidence for heuristic extraction
             )
             claims.append(claim)
         
-        return claims[:5]  # Limit to top 5 claims
+        # Prioritize claims with specific keywords
+        claims.sort(key=lambda c: c.confidence, reverse=True)
+        
+        result_claims = claims[:5]  # Limit to top 5 claims
+        print(f"[证据链-启发式] 提取了 {len(result_claims)} 个claims（维度: {dimension}）")
+        return result_claims
+    
+    def _classify_claim_type(
+        self, 
+        text: str, 
+        achievement_kw: List[str],
+        skill_kw: List[str],
+        impact_kw: List[str],
+        collaboration_kw: List[str],
+        experience_kw: List[str]
+    ) -> str:
+        """Classify claim type based on keyword matching"""
+        # Count keyword matches for each type
+        achievement_score = sum(1 for kw in achievement_kw if kw in text)
+        skill_score = sum(1 for kw in skill_kw if kw in text)
+        impact_score = sum(1 for kw in impact_kw if kw in text)
+        collaboration_score = sum(1 for kw in collaboration_kw if kw in text)
+        experience_score = sum(1 for kw in experience_kw if kw in text)
+        
+        # Return type with highest score
+        scores = {
+            "achievement": achievement_score,
+            "skill": skill_score,
+            "impact": impact_score,
+            "collaboration": collaboration_score,
+            "experience": experience_score
+        }
+        
+        max_score = max(scores.values())
+        if max_score == 0:
+            return "general"
+        
+        # Return the type with max score
+        for claim_type, score in scores.items():
+            if score == max_score:
+                return claim_type
+        
+        return "general"
     
     def _find_supporting_evidence(
         self,

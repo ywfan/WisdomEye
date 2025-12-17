@@ -309,12 +309,21 @@ class ProductivityTimelineAnalyzer:
             avg_citations = sum(p.get("citation_count", 0) for p in pubs) / len(pubs)
             top_tier_count = sum(
                 1 for p in pubs 
-                if p.get("journal_tier") in ["T1", "T2"]
+                if p.get("journal_tier") in ["T1", "T2", "Q1"]  # Include Q1
             )
             top_tier_ratio = top_tier_count / len(pubs) if pubs else 0
             
-            # Quality score (0-10)
-            quality_score = min(10, avg_citations / 10 + top_tier_ratio * 5)
+            # Quality score (0-10) with fallback mechanisms
+            # Primary: citations + journal tier
+            # Fallback 1: venue prestige (CCF-A, top conferences)
+            # Fallback 2: basic venue scoring
+            
+            if avg_citations > 0 or top_tier_ratio > 0:
+                # Has citation or tier data
+                quality_score = min(10, avg_citations / 10 + top_tier_ratio * 5)
+            else:
+                # Fallback: infer quality from venue names
+                quality_score = self._infer_quality_from_venues(pubs)
             
             balance["annual_quality_metrics"].append({
                 "year": year,
@@ -483,6 +492,87 @@ class ProductivityTimelineAnalyzer:
         return timeline
     
     # ============ Helper Methods ============
+    
+    def _infer_quality_from_venues(self, pubs: List[Dict[str, Any]]) -> float:
+        """
+        Infer quality score from venue names when citation/tier data is missing
+        
+        Returns:
+            Quality score (0-10)
+        """
+        if not pubs:
+            return 0.0
+        
+        # Top-tier venues (partial list - extend as needed)
+        top_conferences = [
+            "neurips", "nips", "icml", "iclr", "cvpr", "iccv", "eccv", "aaai", 
+            "ijcai", "acl", "emnlp", "naacl", "sigir", "www", "kdd", "icde",
+            "vldb", "sigmod", "osdi", "sosp", "nsdi", "usenix", "ccs", "sp",
+            "Oakland", "ndss"
+        ]
+        
+        top_journals = [
+            "nature", "science", "cell", "pnas", "jacs",
+            "ieee transactions", "acm transactions", "journal of machine learning",
+            "siam journal", "jmlr", "tpami", "tnnls", "tifs", "tkde", "tods",
+            "journal of the european mathematical society", "jems",
+            "mathematics of computation", "foundations of computational mathematics",
+            "journal of scientific computing", "journal of computational mathematics"
+        ]
+        
+        # Count high-quality venues
+        top_conf_count = 0
+        top_journal_count = 0
+        recognized_venue_count = 0
+        
+        for pub in pubs:
+            venue = (pub.get("venue") or "").lower()
+            journal = (pub.get("journal") or "").lower()
+            venue_combined = f"{venue} {journal}".lower()
+            
+            # Check for top conferences
+            if any(conf in venue_combined for conf in top_conferences):
+                top_conf_count += 1
+                recognized_venue_count += 1
+            # Check for top journals
+            elif any(jour in venue_combined for jour in top_journals):
+                top_journal_count += 1
+                recognized_venue_count += 1
+            # Check for Q分区 in text
+            elif "q1" in venue_combined or "一区" in venue_combined:
+                top_journal_count += 1
+                recognized_venue_count += 1
+            # Check for CCF-A
+            elif "ccf-a" in venue_combined or "ccf a" in venue_combined:
+                top_conf_count += 1
+                recognized_venue_count += 1
+            # Generic "journal" or "conference" gets lower score
+            elif "journal" in venue_combined or "conference" in venue_combined:
+                recognized_venue_count += 0.3
+        
+        # Calculate quality score based on venue recognition
+        total_pubs = len(pubs)
+        top_ratio = (top_conf_count + top_journal_count) / total_pubs
+        recognized_ratio = recognized_venue_count / total_pubs
+        
+        # Scoring:
+        # - Top venue: 8-10 points
+        # - Recognized venue: 5-7 points
+        # - Unknown venue: 3-5 points (baseline for having publication)
+        
+        if top_ratio >= 0.5:  # >50% top venues
+            quality_score = 8.5 + top_ratio * 1.5
+        elif top_ratio >= 0.3:  # 30-50% top venues
+            quality_score = 7.0 + top_ratio * 3.0
+        elif recognized_ratio >= 0.5:  # >50% recognized venues
+            quality_score = 5.5 + recognized_ratio * 2.0
+        elif recognized_ratio >= 0.3:  # 30-50% recognized
+            quality_score = 4.5 + recognized_ratio * 2.5
+        else:
+            # Baseline: publications exist but venues unknown
+            quality_score = 3.5 + recognized_ratio * 2.0
+        
+        return min(10.0, round(quality_score, 1))
     
     def _extract_year(self, date_str: Any) -> Optional[int]:
         """Extract year from date string"""
