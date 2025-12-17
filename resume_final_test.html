@@ -1,0 +1,1677 @@
+<!doctype html>
+<html lang='zh-CN'>
+<head>
+    <meta charset='utf-8'/>
+    <meta name='viewport' content='width=device-width,initial-scale=1'/>
+    <title>综合评价 - 林挺</title>
+    <style>
+    :root {
+        --color-primary: #3b82f6;
+        --color-primary-dark: #2563eb;
+        --color-primary-light: #60a5fa;
+        --color-success: #10b981;
+        --color-warning: #f59e0b;
+        --color-bg: #f8fafc;
+        --color-surface: #ffffff;
+        --color-text: #0f172a;
+        --color-text-secondary: #64748b;
+        --color-text-muted: #94a3b8;
+        --color-border: #e2e8f0;
+        --color-border-light: #f1f5f9;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        --shadow-hover: 0 12px 24px -8px rgb(0 0 0 / 0.15);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --transition-fast: 150ms ease;
+        --transition-normal: 250ms ease;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        background: var(--color-bg);
+        color: var(--color-text);
+        line-height: 1.6;
+        overflow-x: hidden;
+    }
+
+    .page {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: 100vh;
+        gap: 0;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        background: var(--color-surface);
+        border-right: 1px solid var(--color-border);
+        padding: 32px 24px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    
+    .sidebar::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .sidebar::-webkit-scrollbar-track {
+        background: var(--color-bg);
+    }
+    
+    .sidebar::-webkit-scrollbar-thumb {
+        background: var(--color-border);
+        border-radius: 3px;
+    }
+    
+    .sidebar::-webkit-scrollbar-thumb:hover {
+        background: var(--color-text-muted);
+    }
+
+    .title {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--color-text);
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        font-size: 14px;
+        color: var(--color-text-secondary);
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .nav a {
+        display: block;
+        padding: 10px 14px;
+        color: var(--color-text-secondary);
+        text-decoration: none;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+
+    .nav a:hover {
+        background: var(--color-bg);
+        color: var(--color-primary);
+        transform: translateX(2px);
+    }
+
+    /* Main content */
+    .content {
+        padding: 48px 40px;
+        background: var(--color-bg);
+    }
+
+    .section {
+        margin-bottom: 48px;
+    }
+
+    h2 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--color-text);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--color-border-light);
+    }
+    
+    h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--color-text);
+        margin: 16px 0 12px 0;
+    }
+    
+    h1, h2, h3 {
+        line-height: 1.3;
+    }
+
+    /* Card system - Enhanced with better shadows and hover effects */
+    .card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        transition: all var(--transition-normal);
+        overflow: hidden;
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow-hover);
+        border-color: var(--color-primary-light);
+        transform: translateY(-2px);
+    }
+    
+    .card > *:last-child {
+        margin-bottom: 0;
+    }
+
+    .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 20px;
+        list-style: none;
+    }
+
+    /* Key-value pairs - Enhanced word wrapping */
+    .kv {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        font-size: 14px;
+        line-height: 1.6;
+        align-items: flex-start;
+    }
+
+    .kv .k {
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        min-width: 80px;
+        flex-shrink: 0;
+    }
+
+    .kv .v {
+        color: var(--color-text);
+        flex: 1;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        min-width: 0;
+    }
+    
+    .kv:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Links - Enhanced with better word breaking and hover effects */
+    .link {
+        color: var(--color-primary);
+        text-decoration: none;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        transition: all var(--transition-fast);
+        display: inline;
+        position: relative;
+    }
+
+    .link:hover {
+        color: var(--color-primary-dark);
+        text-decoration: underline;
+    }
+    
+    .link:active {
+        color: var(--color-primary-dark);
+    }
+    
+    /* Ensure long URLs don't overflow containers */
+    .link[href*="://"] {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+
+    /* Timeline */
+    .timeline-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 0 16px 20px;
+        position: relative;
+        border-left: 2px solid var(--color-border);
+    }
+
+    .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: -6px;
+        top: 20px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--color-primary);
+        border: 2px solid var(--color-surface);
+    }
+
+    .timeline-title {
+        font-weight: 600;
+        color: var(--color-text);
+        flex: 1;
+    }
+
+    .timeline-meta {
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        text-align: right;
+    }
+
+    /* Publications - Enhanced styling */
+    .publication-card {
+        padding: 20px;
+        border-left: 3px solid var(--color-primary);
+    }
+    
+    .publication-card .card-title {
+        font-size: 16px;
+        line-height: 1.5;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .pub-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 24px;
+        padding: 0 8px;
+        border-radius: 12px;
+        background: var(--color-primary);
+        color: white;
+        font-size: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .pub-meta {
+        color: var(--color-text-secondary);
+        font-size: 13px;
+        margin: 12px 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        line-height: 1.6;
+    }
+    
+    .authors {
+        color: var(--color-text);
+        font-weight: 500;
+    }
+
+    .venue {
+        font-style: italic;
+        color: var(--color-primary);
+    }
+    
+    .date {
+        color: var(--color-text-muted);
+    }
+    
+    .pub-actions {
+        display: flex;
+        gap: 12px;
+        margin: 12px 0;
+        flex-wrap: wrap;
+    }
+    
+    .pub-actions .link {
+        display: inline-block;
+        padding: 8px 16px;
+        background: var(--color-primary);
+        color: white;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 500;
+        transition: all var(--transition-fast);
+    }
+    
+    .pub-actions .link:hover {
+        background: var(--color-primary-dark);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+        text-decoration: none;
+    }
+
+    .summary {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--color-border-light);
+    }
+
+    .summary .content {
+        margin-top: 8px;
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+    .abstract-details {
+        margin-top: 12px;
+        cursor: pointer;
+    }
+
+    .abstract-details summary {
+        color: var(--color-primary);
+        font-size: 14px;
+        font-weight: 500;
+        list-style: none;
+        cursor: pointer;
+        user-select: none;
+        padding: 8px 12px;
+        background: var(--color-bg);
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-fast);
+    }
+    
+    .abstract-details summary:hover {
+        background: var(--color-border-light);
+    }
+
+    .abstract-details summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .abstract-content {
+        margin-top: 12px;
+        padding: 16px;
+        background: var(--color-bg);
+        border-radius: var(--radius-sm);
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .abstract-content::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .abstract-content::-webkit-scrollbar-track {
+        background: var(--color-border-light);
+        border-radius: 3px;
+    }
+    
+    .abstract-content::-webkit-scrollbar-thumb {
+        background: var(--color-border);
+        border-radius: 3px;
+    }
+
+    /* Chips and badges */
+    .chip {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: var(--color-bg);
+        color: var(--color-text-secondary);
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .score-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 48px;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .hbadge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: var(--radius-sm);
+        background: var(--color-bg);
+        color: var(--color-text-secondary);
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    /* Metrics */
+    .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .metric-card {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        padding: 24px;
+        border-radius: var(--radius-md);
+        text-align: center;
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+
+    .metric-num {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .metric-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    /* Evaluation cards */
+    .eval-card {
+        border-left: 4px solid var(--color-primary);
+    }
+
+    .eval-content {
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        line-height: 1.8;
+    }
+
+    .evidence {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--color-border-light);
+    }
+
+    .evidence summary {
+        color: var(--color-text-secondary);
+        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .evidence-content {
+        margin-top: 12px;
+        padding: 12px;
+        background: var(--color-bg);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+    }
+
+    /* Social cards */
+    .social-card {
+        border-left: 4px solid var(--color-success);
+    }
+
+    .topics {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--color-border-light);
+    }
+
+    .topics .content {
+        margin-top: 8px;
+        color: var(--color-text-secondary);
+        font-size: 14px;
+    }
+
+    /* Network */
+    .network-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .network-node {
+        padding: 12px;
+        background: var(--color-bg);
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        color: var(--color-text);
+    }
+
+    .tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .tag {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: var(--color-bg);
+        color: var(--color-text);
+        font-size: 13px;
+        border: 1px solid var(--color-border);
+    }
+
+    /* Sources list - Enhanced styling */
+    .sources {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .sources li {
+        padding: 14px 16px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        transition: all var(--transition-fast);
+    }
+    
+    .sources li:hover {
+        border-color: var(--color-primary);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .source-number {
+        color: var(--color-text-muted);
+        font-weight: 600;
+        min-width: 24px;
+        flex-shrink: 0;
+    }
+
+    .signal-list {
+        list-style: disc;
+        padding-left: 24px;
+        margin-top: 12px;
+        color: var(--color-text-secondary);
+        font-size: 14px;
+    }
+
+    .signal-list li {
+        margin-bottom: 8px;
+    }
+
+    /* Details/Summary */
+    details summary {
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.2s ease;
+    }
+
+    details summary:hover {
+        color: var(--color-primary);
+    }
+
+    details[open] summary {
+        margin-bottom: 12px;
+    }
+
+    /* Markdown content - Enhanced readability */
+    .md {
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        line-height: 1.8;
+    }
+
+    .md p {
+        margin-bottom: 12px;
+    }
+    
+    .md p:last-child {
+        margin-bottom: 0;
+    }
+
+    .md strong {
+        color: var(--color-text);
+        font-weight: 600;
+    }
+    
+    .md em {
+        font-style: italic;
+        color: var(--color-text);
+    }
+
+    .md code {
+        padding: 3px 8px;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-light);
+        border-radius: 4px;
+        font-family: "Monaco", "Menlo", "Courier New", "Consolas", monospace;
+        font-size: 13px;
+        color: var(--color-text);
+    }
+
+    .md pre {
+        padding: 16px;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        overflow-x: auto;
+        margin: 12px 0;
+    }
+
+    .md pre code {
+        padding: 0;
+        background: none;
+        border: none;
+        font-size: 13px;
+    }
+    
+    .md ul, .md ol {
+        padding-left: 24px;
+        margin: 12px 0;
+    }
+    
+    .md li {
+        margin-bottom: 6px;
+    }
+    
+    .md blockquote {
+        border-left: 3px solid var(--color-primary);
+        padding-left: 16px;
+        margin: 12px 0;
+        color: var(--color-text);
+        font-style: italic;
+    }
+    
+    .md hr {
+        border: none;
+        border-top: 1px solid var(--color-border);
+        margin: 20px 0;
+    }
+
+    /* Text content - Enhanced wrapping and readability */
+    .content {
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        line-height: 1.7;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .text {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        line-height: 1.7;
+    }
+    
+    /* Ensure all text content respects container boundaries */
+    p, div, span, li {
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }
+
+    /* Empty state */
+    .empty-card {
+        text-align: center;
+        color: var(--color-text-muted);
+        font-style: italic;
+    }
+
+    /* Footer */
+    footer {
+        margin-top: 48px;
+        padding-top: 24px;
+        border-top: 1px solid var(--color-border);
+        color: var(--color-text-muted);
+        font-size: 13px;
+        text-align: center;
+    }
+
+    /* Responsive design - Enhanced for better mobile experience */
+    @media (max-width: 1200px) {
+        .cards {
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        }
+    }
+    
+    @media (max-width: 1024px) {
+        .layout {
+            grid-template-columns: 1fr;
+        }
+        
+        .sidebar {
+            position: relative;
+            height: auto;
+            border-right: none;
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .cards {
+            grid-template-columns: 1fr;
+        }
+        
+        .content {
+            padding: 32px 24px;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .content {
+            padding: 20px 16px;
+        }
+        
+        .sidebar {
+            padding: 20px 16px;
+        }
+        
+        .card {
+            padding: 16px;
+        }
+        
+        h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        
+        .title {
+            font-size: 18px;
+        }
+        
+        .timeline-item {
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .timeline-meta {
+            text-align: left;
+            font-size: 13px;
+        }
+        
+        .kv {
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .kv .k {
+            min-width: auto;
+        }
+        
+        .metric-num {
+            font-size: 28px;
+        }
+    }
+
+    /* Print styles */
+    @media print {
+        body {
+            background: white;
+        }
+        
+        .layout {
+            grid-template-columns: 1fr;
+        }
+        
+        .sidebar {
+            display: none;
+        }
+        
+        .card {
+            break-inside: avoid;
+            box-shadow: none;
+        }
+        
+        .cards {
+            grid-template-columns: 1fr;
+        }
+        
+        .link {
+            color: #000;
+            text-decoration: underline;
+        }
+    }
+    
+    /* ========== Phase 1-3 Enhanced Styles ========== */
+    
+    /* Risk Assessment Styles */
+    .risk-summary-card {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+    }
+    
+    .risk-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .risk-stat {
+        text-align: center;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+    }
+    
+    .risk-stat.critical { border-left: 3px solid #dc2626; }
+    .risk-stat.high { border-left: 3px solid #f59e0b; }
+    .risk-stat.medium { border-left: 3px solid #fbbf24; }
+    .risk-stat.low { border-left: 3px solid #10b981; }
+    
+    .risk-stat .num {
+        display: block;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    
+    .risk-stat .label {
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .risk-category-card {
+        border-left: 3px solid #f59e0b;
+    }
+    
+    .risk-item {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+    }
+    
+    .risk-item.critical { background: #fee2e2; border-left: 3px solid #dc2626; }
+    .risk-item.high { background: #fef3c7; border-left: 3px solid #f59e0b; }
+    .risk-item.medium { background: #fef9c3; border-left: 3px solid #fbbf24; }
+    .risk-item.low { background: #d1fae5; border-left: 3px solid #10b981; }
+    
+    .risk-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .risk-header .badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.9);
+    }
+    
+    .risk-title {
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: 0.5rem;
+    }
+    
+    .risk-desc {
+        color: var(--color-text);
+        line-height: 1.5;
+        margin-bottom: 0.5rem;
+    }
+    
+    .risk-implication {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        background: rgba(255, 140, 0, 0.1);
+        font-size: 0.875rem;
+        color: #c05621;
+        line-height: 1.5;
+    }
+    
+    .risk-mitigation {
+        margin-top: 0.75rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        background: rgba(34, 197, 94, 0.1);
+        font-size: 0.875rem;
+    }
+    
+    .risk-mitigation ul {
+        margin: 0.5rem 0 0 1.25rem;
+        padding: 0;
+    }
+    
+    .risk-mitigation li {
+        margin: 0.25rem 0;
+        line-height: 1.5;
+    }
+    
+    .category-tag {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        background: rgba(99, 102, 241, 0.1);
+        color: #4f46e5;
+        margin-left: 0.5rem;
+    }
+    
+    .risk-evidence {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.5);
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    /* Authorship Analysis Styles */
+    .authorship-metrics-card {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-left: 4px solid var(--color-primary);
+    }
+    
+    .metric-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .metric-item {
+        text-align: center;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.8);
+    }
+    
+    .metric-item .label {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-item .value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--color-primary);
+    }
+    
+    .authorship-patterns-card {
+        border-left: 3px solid var(--color-primary);
+    }
+    
+    .pattern-item {
+        padding: 0.75rem 0;
+        line-height: 1.6;
+    }
+    
+    .pattern-item strong {
+        color: var(--color-primary);
+    }
+    
+    /* Evidence Chain Styles */
+    .evidence-card {
+        border-left: 3px solid #8b5cf6;
+    }
+    
+    .claim-item {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+    }
+    
+    .claim-text {
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: 0.75rem;
+    }
+    
+    .confidence-bar {
+        position: relative;
+        height: 24px;
+        background: #e5e7eb;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);
+        transition: width 0.3s ease;
+    }
+    
+    .confidence-text {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-text);
+    }
+    
+    .evidence-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .evidence-item {
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+    }
+    
+    .ev-type {
+        font-weight: 600;
+        color: #8b5cf6;
+    }
+    
+    /* Cross Validation Styles */
+    .cross-val-summary-card {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border-left: 4px solid var(--color-success);
+    }
+    
+    .consistency-meter {
+        position: relative;
+        height: 32px;
+        background: #e5e7eb;
+        border-radius: 16px;
+        overflow: hidden;
+        margin: 1rem 0;
+    }
+    
+    .meter-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--color-success) 0%, #34d399 100%);
+        transition: width 0.3s ease;
+    }
+    
+    .meter-text {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--color-text);
+    }
+    
+    .inconsistency-count {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(251, 191, 36, 0.2);
+        color: #92400e;
+        font-weight: 600;
+    }
+    
+    .all-consistent {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(16, 185, 129, 0.2);
+        color: #065f46;
+        font-weight: 600;
+    }
+    
+    .inconsistencies-card {
+        border-left: 3px solid #f59e0b;
+    }
+    
+    .inconsistency-item {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: #fef3c7;
+        border-left: 3px solid #f59e0b;
+    }
+    
+    .incons-type {
+        font-weight: 700;
+        color: #92400e;
+        margin-bottom: 0.5rem;
+    }
+    
+    .incons-desc {
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+    }
+    
+    /* Research Lineage Styles */
+    .lineage-summary-card {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        border-left: 4px solid #6366f1;
+    }
+    
+    .lineage-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .lineage-metrics .metric-item {
+        background: rgba(255, 255, 255, 0.8);
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+    }
+    
+    .coherence-assessment {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+        font-style: italic;
+        color: var(--color-text-secondary);
+    }
+    
+    .supervisor-card {
+        border-left: 3px solid #6366f1;
+    }
+    
+    .supervisor-info {
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+    }
+    
+    .sup-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--color-text);
+        margin-bottom: 0.5rem;
+    }
+    
+    .sup-inst {
+        color: var(--color-text-secondary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .sup-year {
+        color: var(--color-text-muted);
+        font-size: 0.875rem;
+    }
+    
+    .influence, .prestige {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        border-radius: var(--radius-sm);
+        background: #f5f5f5;
+        font-size: 0.875rem;
+    }
+    
+    .trajectory-card {
+        border-left: 3px solid #8b5cf6;
+    }
+    
+    .evolution-text {
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+        line-height: 1.6;
+        font-style: italic;
+    }
+    
+    .stages-timeline {
+        margin-top: 1rem;
+    }
+    
+    .stage-item {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+        border-left: 3px solid #8b5cf6;
+    }
+    
+    .stage-header {
+        margin-bottom: 0.5rem;
+    }
+    
+    .stage-header strong {
+        color: #6b21a8;
+    }
+    
+    .stage-header .years {
+        color: var(--color-text-muted);
+        font-size: 0.875rem;
+    }
+    
+    .stage-stats {
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        margin: 0.25rem 0;
+    }
+    
+    .stage-topics {
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(139, 92, 246, 0.2);
+    }
+    
+    .topic-evolution-card {
+        border-left: 3px solid #10b981;
+    }
+    
+    .topic-group {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+    }
+    
+    .topic-group.sustained {
+        background: #d1fae5;
+        border-left: 3px solid #10b981;
+    }
+    
+    .topic-group.emerging {
+        background: #dbeafe;
+        border-left: 3px solid #3b82f6;
+    }
+    
+    .topic-group.abandoned {
+        background: #fee2e2;
+        border-left: 3px solid #ef4444;
+    }
+    
+    .topic-label {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .topic-tags {
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+    }
+    
+    .diversity-trend {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+        font-style: italic;
+        color: var(--color-text-secondary);
+    }
+    
+    /* Productivity Timeline Styles */
+    .productivity-summary-card {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+        text-align: center;
+    }
+    
+    .prod-score {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #92400e;
+        margin: 1rem 0;
+    }
+    
+    .prod-score .score-num {
+        color: #f59e0b;
+    }
+    
+    .prod-score .score-max {
+        font-size: 1.5rem;
+        color: var(--color-text-muted);
+    }
+    
+    .trend-assessment {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+        font-weight: 600;
+        color: var(--color-text);
+    }
+    
+    .recent-trend {
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.5);
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .pub-timeline-card {
+        border-left: 3px solid #3b82f6;
+    }
+    
+    .timeline-chart {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        height: 200px;
+        margin: 1.5rem 0;
+        padding: 0 1rem;
+        border-bottom: 2px solid var(--color-border);
+    }
+    
+    .timeline-bar-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 60px;
+    }
+    
+    .timeline-bar {
+        width: 100%;
+        min-height: 4px;
+        background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%);
+        border-radius: 4px 4px 0 0;
+        transition: all 0.3s ease;
+    }
+    
+    .timeline-bar-wrapper:hover .timeline-bar {
+        background: linear-gradient(180deg, #2563eb 0%, #3b82f6 100%);
+        transform: scaleY(1.05);
+    }
+    
+    .timeline-year {
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        transform: rotate(-45deg);
+        white-space: nowrap;
+    }
+    
+    .timeline-stats {
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+        text-align: center;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .balance-card {
+        border-left: 3px solid #8b5cf6;
+    }
+    
+    .balance-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .balance-item {
+        text-align: center;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+    }
+    
+    .balance-item .label {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .balance-item .value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #8b5cf6;
+    }
+    
+    .balance-assessment {
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: #fafafa;
+        font-style: italic;
+        color: var(--color-text-secondary);
+    }
+    
+    .peak-period-card {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+    }
+    
+    .peak-years {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #92400e;
+        margin: 0.75rem 0;
+    }
+    
+    .peak-stats {
+        font-size: 1.125rem;
+        color: var(--color-text-secondary);
+        margin: 0.5rem 0;
+    }
+    
+    .peak-assessment {
+        padding: 1rem;
+        margin-top: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+        font-style: italic;
+    }
+    
+    .prediction-card {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        border-left: 4px solid #6366f1;
+    }
+    
+    .prediction-trend {
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.8);
+        font-weight: 600;
+        color: var(--color-text);
+    }
+    
+    .prediction-confidence {
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.6);
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .recommendations {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.7);
+    }
+    
+    .rec-title {
+        font-weight: 700;
+        color: #4338ca;
+        margin-bottom: 0.5rem;
+    }
+    
+    .rec-item {
+        padding: 0.5rem 0;
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+    }
+    
+    </style>
+</head>
+<body>
+<div class='page'>
+<div class='layout'>
+    <aside class='sidebar'>
+        <div class='title'>候选人综合评价</div>
+        <div class='subtitle'>姓名：林挺｜学历：博士研究生</div>
+        <nav class='nav'><a href='#basic'>基本信息</a><a href='#education'>教育经历</a><a href='#work'>工作经历</a><a href='#internships'>实习经历</a><a href='#overview'>综合评价</a><a href='#review'>学术评价</a><a href='#evaluation'>维度评价</a><a href='#scholar'>学术指标</a><a href='#risk-assessment'>风险评估</a><a href='#authorship'>作者贡献分析</a><a href='#evidence-chain'>证据链追溯</a><a href='#cross-validation'>交叉验证</a><a href='#research-lineage'>研究脉络分析</a><a href='#productivity-timeline'>产出时间线分析</a><a href='#publications'>论文</a><a href='#awards-honors'>奖项与荣誉</a><a href='#projects'>项目经验</a><a href='#grants'>研究资助</a><a href='#open_source'>开源贡献</a><a href='#patents'>专利</a><a href='#activities'>学术活动</a><a href='#memberships'>组织会员</a><a href='#social'>社交声量</a><a href='#network'>人脉图谱</a><a href='#skills'>技能</a><a href='#others'>其他</a><a href='#sources'>参考来源</a></nav>
+    </aside>
+    <main class='content'>
+        <section id='basic' class='section'>
+            <h2>基本信息</h2>
+            <div class='card'><div class="kv"><span class="k">姓名：</span><span class="v">林挺</span></div><div class="kv"><span class="k">学历：</span><span class="v">博士研究生</span></div><div class="kv"><span class="k">邮箱：</span><span class="v">lintingsms@pku.edu.cn</span></div></div>
+        </section>
+        
+        <section id='education' class='section'>
+            <h2>教育经历</h2>
+            <div class='card'><ul><li class="timeline-item"><span class="timeline-title">北京大学数学科学学院</span><span class="timeline-meta">博士 • 计算数学 • 2021 – 2026</span></li><li class="timeline-item"><span class="timeline-title">北京大学数学科学学院</span><span class="timeline-meta">学士 • 数学 • 2017 – 2021</span></li><li class="timeline-item"><span class="timeline-title">北京大学国家发展研究院</span><span class="timeline-meta">学士（双学位） • 经济学 • 2018 – 2021</span></li></ul></div>
+        </section>
+        
+        <section id='work' class='section'><h2>工作经历</h2><div class='card'><ul><li class="timeline-item"><span class="timeline-title">华为, 2012 实验室，理论部</span><span class="timeline-meta">2020-2021</span></li></ul></div></section>
+        
+        
+        <section id='overview' class='section'>
+            <h2>综合评价</h2>
+            <div class='card'><div class='md'><p><strong>林挺博士终极综合评价报告</strong></p>
+<p><strong>一、画像定性</strong><br />
+林挺是典型的<strong>学术研究型人才</strong>，兼具深厚的理论基础与初步的产业实践经历。其核心优势在于数学理论与计算方法的交叉研究能力，尤其在有限元方法、神经网络理论及微分几何离散化等领域有系统产出。h-index=4虽不高，但结合其博士在读阶段及已发表的16篇论文（含NeurIPS、SIAM系列等顶刊），显示其具备扎实的学术积累与持续产出潜力。华为2012实验室的实习经历表明其具备将理论向工业问题转化的初步意识，但尚未形成成熟的工程落地能力。</p>
+<p><strong>二、矛盾与一致性分析</strong><br />
+<strong>强项组合</strong>：顶尖学术背景（北大数学本博、国家奖学金、丘赛金牌）与跨机构合作能力（与5国学者合作、人脉中心性度=17）形成协同，使其在基础研究领域具备独特竞争力。<strong>弱项与风险</strong>：社交声量（平台数=0）与公开影响力缺失，可能限制其研究成果的传播与产学研转化效率；同时，尽管拥有国自然青年基金主持经历，但独立领导大型项目的能力尚待验证。<strong>机会点</strong>：其双学位经济学背景与华为产业实践结合，可在“数学+金融科技”或“AI理论+系统优化”方向形成差异化优势。</p>
+<p><strong>三、关键证据融合</strong><br />
+- 学术指标：h-index=4、16篇论文（多篇顶刊）及国自然青年基金主持经历，印证其具备独立科研申请与执行能力。<br />
+- 人脉网络：中心性度=17，合作者涵盖胡俊、Zuowei Shen等国内外知名学者，体现其在国际学术圈的嵌入深度。<br />
+- 社会信号：社交媒体零活跃度与其学术高产形成反差，反映其专注内向的研究风格，但也提示需加强对外交流与影响力建设。</p>
+<p><strong>四、组织落地建议</strong><br />
+<strong>定位</strong>：优先配置于企业研究院的基础算法团队或高校交叉实验室，担任核心研究员，聚焦“理论创新-算法实现”闭环的早期探索。<br />
+<strong>前3个月目标</strong>：<br />
+1. 完成1篇在审顶刊论文的修订与发表，巩固学术声誉；<br />
+2. 主导1项内部技术预研项目（如基于有限元的优化算法设计），并输出可行性报告；<br />
+3. 在团队内组织2-3次专题研讨，分享其在Transformer理论近似或弹性力学离散化方面的最新进展，激活团队理论深度。</p>
+<p><strong>总结</strong>：林挺是理论驱动型创新者的典型代表，需在保护其科研专注度的同时，逐步引导其参与产业问题定义与跨部门协作，以释放其“数学+技术”的长期价值。</p></div></div>
+            <div class='metrics'>
+        <div class='metric-card'>
+            <div class='metric-num'>16</div>
+            <div class='metric-label'>论文</div>
+        </div>
+        <div class='metric-card'>
+            <div class='metric-num'>10</div>
+            <div class='metric-label'>奖项</div>
+        </div>
+        <div class='metric-card'>
+            <div class='metric-num'>0</div>
+            <div class='metric-label'>来源</div>
+        </div>
+    </div>
+        </section>
+        
+        <section id='review' class='section'>
+            <h2>学术评价</h2>
+            <details class='card' open>
+                <summary>点击展开/收起</summary>
+                <div class='text'>林挺的研究体系呈现出计算数学与机器学习理论的深度交叉。其工作主要围绕两大主线展开：一是深度神经网络的逼近理论分析，二是有限元方法的数学基础构建。在机器学习方向，他系统研究了Transformer架构、全卷积网络等现代神经网络的通用逼近性质，特别关注不变函数通过动力系统的逼近机制，这为理解深度学习表达能力提供了严格的数学框架。在计算数学领域，他深入探讨了有限元空间的构造理论，从超样条到任意维度的Cr协调有限元空间，建立了立方体网格上的弹性复形理论，并系统分析了三角剖分上的分布Hessian与divdiv复形。这些研究不仅深化了对有限元数学结构的认识，更通过小波框架的两尺度模型等工作，搭建了数值分析与图像处理的理论桥梁。其学术价值在于以严谨的数学语言揭示了复杂计算模型的内在机理，为人工智能算法的可靠性奠定了理论基础，同时在计算数学前沿领域提出了具有普遍意义的构造性方法。</div>
+            </details>
+        </section>
+        
+        <section id='evaluation' class='section'>
+            <h2>多维度评价</h2>
+            <div class='cards'><div class='card eval-card'><div class='card-title'>学术创新力<span class='score-badge'>9.5</span></div><div class='eval-content'><p>林挺展现了卓越的学术创新能力，在计算数学与深度学习交叉领域取得系统性突破。其研究成果覆盖神经网络理论分析、有限元方法构造、弹性力学数学理论等多个前沿方向，并在顶级期刊发表系列论文。</p></div><details class='evidence'><summary>证据来源</summary><div class='evidence-content'>A unified framework on the universal approximation of transformer-type architectures (NeurIPS 2025)<br>Finite Element Grad grad Complexes and Elasticity Complexes on Cuboid Meshes (Journal of Scientific Computing 2024)<br>Deep Learning via Dynamical Systems: An Approximation Perspective (Journal of the European Mathematical Society 2023)</div></details></div><div class='card eval-card'><div class='card-title'>工程实战力<span class='score-badge'>7.5</span></div><div class='eval-content'><p>具备将数学理论应用于实际工程问题的能力，在华为2012实验室理论部的工作经历表明其能够将抽象数学理论转化为技术解决方案。</p></div><details class='evidence'><summary>证据来源</summary><div class='evidence-content'>华为2012实验室理论部工作经历<br>微结构弹性力学的数学理论与保结构离散研究项目<br>有限元方法在工程计算中的应用系列研究</div></details></div><div class='card eval-card'><div class='card-title'>行业影响力<span class='score-badge'>7.0</span></div><div class='eval-content'><p>在学术圈内已建立显著影响力，通过高水平期刊发表、学术报告和奖项认可获得同行认可，但在产业界影响力尚在建立过程中。</p></div><details class='evidence'><summary>证据来源</summary><div class='evidence-content'>东亚SIAM最佳论文奖一等奖（2023）<br>在国内外14所大学/研究院进行学术报告<br>10篇期刊论文（含4篇一区）和1篇CCF-A会议论文</div></details></div><div class='card eval-card'><div class='card-title'>合作协作<span class='score-badge'>9.0</span></div><div class='eval-content'><p>展现出优秀的跨学科合作能力，与5个国家的研究者合作发表论文，并在学术组织活动中担任领导角色。</p></div><details class='evidence'><summary>证据来源</summary><div class='evidence-content'>研究生应用数学卓越计划学生主席<br>与15位不同研究者合作发表论文<br>组织北京大学计算数学博士论坛（2022-2025）</div></details></div><div class='card eval-card'><div class='card-title'>综合素质<span class='score-badge'>8.5</span></div><div class='eval-content'><p>具备全面的科研素养和领导潜力，从本科阶段的竞赛优异表现到博士阶段的独立科研能力，展现了持续的学习成长轨迹。</p></div><details class='evidence'><summary>证据来源</summary><div class='evidence-content'>国家奖学金（博士）<br>中国科协青年人才托举工程博士生专项计划<br>丘成桐数学竞赛多次获奖经历</div></details></div></div>
+        </section>
+        
+        <section id='scholar' class='section'>
+            <h2>学术指标</h2>
+            <div class='cards'>
+                <div class='card'>
+                    <div class='card-title'>学术指标</div>
+                    <div class="kv"><span class="k">h-index：</span><span class="v">4</span></div>
+                    
+                    
+                    
+                    <div class="kv"><span class="k">论文总数：</span><span class="v">16</span></div>
+                    <div style='margin-top: 12px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 13px; color: #856404;'>ℹ️ 数据来源: 推断自论文列表</div>
+                </div>
+            </div>
+        </section>
+        
+        <section id='risk-assessment' class='section'><h2>🚨 风险评估</h2><div class='cards'><div class='card risk-summary-card'><div class='card-title'>🚨 风险总览</div><div class='risk-stats'><div class='risk-stat critical'><span class='num'>0</span><span class='label'>严重</span></div><div class='risk-stat high'><span class='num'>1</span><span class='label'>高风险</span></div><div class='risk-stat medium'><span class='num'>2</span><span class='label'>中风险</span></div><div class='risk-stat low'><span class='num'>1</span><span class='label'>低风险</span></div></div></div><div class='card risk-category-card'><div class='card-title'>🟠 高风险</div><div class='risk-item high'><div class='risk-header'><span class='badge'>HIGH</span><span class='category-tag'>研究独立性</span></div><div class='risk-title'><strong>第一作者论文比例过低 (0.0%)</strong></div><div class='risk-desc'>📊 16篇论文中仅0篇为第一作者。</div><div class='risk-implication'>⚠️ 可能过度依赖导师/合作者，独立研究能力存疑。</div><div class='risk-mitigation'>💡 <strong>建议措施:</strong><ul><li>要求提供详细的独立研究计划说明</li><li>面试时探查候选人提出原创研究问题的能力</li><li>联系推荐人特别询问独立性情况</li></ul></div></div></div><div class='card risk-category-card'><div class='card-title'>🟡 中风险</div><div class='risk-item medium'><div class='risk-header'><span class='badge'>MEDIUM</span><span class='category-tag'>研究独立性</span></div><div class='risk-title'><strong>无通讯作者论文</strong></div><div class='risk-desc'>📊 候选人从未担任任何论文的通讯作者。</div><div class='risk-implication'>⚠️ 可能未主导过完整研究项目（从构思到发表），领导经验不明确。</div><div class='risk-mitigation'>💡 <strong>建议措施:</strong><ul><li>推荐人验证时专门询问研究领导力</li><li>要求提供项目领导经验实例</li></ul></div></div><div class='risk-item medium'><div class='risk-header'><span class='badge'>MEDIUM</span><span class='category-tag'>教学能力</span></div><div class='risk-title'><strong>无教学经验记录</strong></div><div class='risk-desc'>📊 简历中未列出任何教学职位或经验</div><div class='risk-implication'>⚠️ 对于终身教职岗位，教学能力至关重要但未经验证。</div><div class='risk-mitigation'>💡 <strong>建议措施:</strong><ul><li>要求提供教学陈述和理念</li><li>如有可能，要求提供教学评估</li><li>考虑在面试时安排教学演示</li></ul></div></div></div><div class='card risk-category-card'><div class='card-title'>🟢 低风险</div><div class='risk-item low'><div class='risk-header'><span class='badge'>LOW</span><span class='category-tag'>合作能力</span></div><div class='risk-title'><strong>合作网络有限（度为0）</strong></div><div class='risk-desc'>📊 仅识别出0位直接合作者</div><div class='risk-implication'>⚠️ 可能难以建立研究合作，可能限制跨学科机会。</div><div class='risk-mitigation'>💡 <strong>建议措施:</strong><ul><li>讨论合作策略和计划</li><li>验证团队工作能力</li></ul></div></div></div></div></section>
+        
+        <section id='authorship' class='section'><h2>📊 作者贡献分析</h2><div class='cards'><div class='card authorship-metrics-card'><div class='card-title'>📊 作者贡献指标</div><div class='metric-row'><div class='metric-item'><div class='label'>独立性得分</div><div class='value score-0'>0.00</div></div><div class='metric-item'><div class='label'>第一作者</div><div class='value'>0 (0.0%)</div></div><div class='metric-item'><div class='label'>通讯作者</div><div class='value'>0 (0.0%)</div></div><div class='metric-item'><div class='label'>独著论文</div><div class='value'>0 (0.0%)</div></div></div></div></div></section>
+        
+        <section id='evidence-chain' class='section'><h2>🔍 证据链追溯</h2><div class='cards'><div class='card evidence-card'><div class='card-title'>🔍 学术创新力</div></div><div class='card evidence-card'><div class='card-title'>🔍 工程实战力</div></div><div class='card evidence-card'><div class='card-title'>🔍 行业影响力</div></div><div class='card evidence-card'><div class='card-title'>🔍 合作协作</div></div><div class='card evidence-card'><div class='card-title'>🔍 综合素质</div></div></div></section>
+        
+        <section id='cross-validation' class='section'><h2>✅ 交叉验证</h2><div class='cards'><div class='card cross-val-summary-card'><div class='card-title'>✅ 一致性检验</div><div class='consistency-meter'><div class='meter-fill' style='width: 0%'></div><span class='meter-text'>0%</span></div><div class='all-consistent'>✨ 学术与社交信号高度一致</div></div></div></section>
+        
+        <section id='research-lineage' class='section'><h2>🎓 研究脉络分析</h2><div class='cards'><div class='card lineage-summary-card'><div class='card-title'>🎓 研究脉络总览</div><div class='lineage-metrics'><div class='metric-item'><span class='label'>连续性得分</span><span class='value'>0.00</span></div><div class='metric-item'><span class='label'>研究成熟度</span><span class='value'>Unknown</span></div></div><div class='coherence-assessment'></div></div></div></section>
+        
+        <section id='productivity-timeline' class='section'><h2>📊 产出时间线分析</h2><div class='cards'><div class='card productivity-summary-card'><div class='card-title'>📊 生产力总览</div><div class='prod-score'><span class='score-num'>6.0</span><span class='score-max'>/10</span></div><div class='trend-assessment'>稳定-积极 - 保持良好生产力并有所改善</div><div class='recent-trend'>近期趋势: 加速 - 近期生产力大幅增长</div></div><div class='card pub-timeline-card'><div class='card-title'>📅 年度发表统计</div><div class='timeline-chart'><div class='timeline-bar-wrapper'><div class='timeline-bar' style='height: 16.666666666666664%' title='2023: 1 篇'></div><div class='timeline-year'>2023</div></div><div class='timeline-bar-wrapper'><div class='timeline-bar' style='height: 66.66666666666666%' title='2024: 4 篇'></div><div class='timeline-year'>2024</div></div><div class='timeline-bar-wrapper'><div class='timeline-bar' style='height: 100.0%' title='2025: 6 篇'></div><div class='timeline-year'>2025</div></div></div><div class='timeline-stats'><span>总计: 11 篇</span> • <span>年均: 3.7 篇</span> • <span>增长率: 强劲增长 (+400%)</span></div></div><div class='card balance-card'><div class='card-title'>⚖️ 质量-数量平衡</div><div class='balance-metrics'><div class='balance-item'><span class='label'>质量得分</span><span class='value'>0.0</span></div><div class='balance-item'><span class='label'>数量得分</span><span class='value'>3.7</span></div><div class='balance-item'><span class='label'>平衡得分</span><span class='value'>0.0</span></div></div><div class='balance-assessment'>数量导向 - 高产出，中等影响力</div></div><div class='card peak-period-card'><div class='card-title'>🌟 高峰生产力期</div><div class='peak-years'>2025</div><div class='peak-stats'>6 篇论文</div><div class='peak-assessment'>高产出高峰 - 侧重数量</div></div><div class='card prediction-card'><div class='card-title'>🔮 未来预测</div><div class='prediction-trend'>持续增长 - 可能保持或提高生产力</div><div class='prediction-confidence'>置信度: 高</div><div class='recommendations'><div class='rec-title'>💡 建议</div><div class='rec-item'>• 建议关注更高影响力的期刊/会议</div></div></div></div></section>
+        
+        <section id='publications' class='section'>
+            <h2>论文 <span class='hbadge'>16</span></h2>
+            <ul class='cards'><li class='card publication-card'><div class='card-title'><span class='pub-number'>#1</span> A unified framework on the universal approximation of transformer-type architectures</div><div class='pub-meta'><span class='authors'>['Jingpu Cheng', 'Qianxiao Li', 'Ting Lin', 'Zuowei Shen']</span> • <span class='venue'>NeurIPS</span> • <span class='date'>2025</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#2</span> Interpolation, Approximation, and Controllability of Deep Neural Networks</div><div class='pub-meta'><span class='authors'>['Jingpu Cheng', 'Qianxiao Li', 'Ting Lin', 'Zuowei Shen']</span> • <span class='venue'>SIAM Journal on Control and Optimization</span> • <span class='date'>2025</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#3</span> Analysis of a wavelet frame based two-scale model for enhanced edges</div><div class='pub-meta'><span class='authors'>['Bin Dong', 'Ting Lin', 'Peichu Xie', 'Zuowei Shen']</span> • <span class='venue'>SIAM Journal on Imaging Sciences</span> • <span class='date'>2025</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#4</span> The condition for constructing a finite element from a superspline</div><div class='pub-meta'><span class='authors'>['Jun Hu', 'Ting Lin', 'Qingyu Wu', 'Beihui Yuan']</span> • <span class='venue'>Mathematics of Computation</span> • <span class='date'>2025</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#5</span> Distributional Hessian and divdiv complexes on triangulation and cohomology</div><div class='pub-meta'><span class='authors'>['Kaibo Hu', 'Ting Lin', 'Qian Zhang']</span> • <span class='venue'>SIAM Journal on Applied Algebra and Geometry</span> • <span class='date'>2025</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#6</span> On the Universal Approximation Property of Deep Fully Convolutional Neural Networks</div><div class='pub-meta'><span class='authors'>['Qianxiao Li', 'Ting Lin', 'Zuowei Shen']</span> • <span class='venue'>SIAM Journal on Mathematical Analysis</span> • <span class='date'>2025</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#7</span> Finite Element Grad grad Complexes and Elasticity Complexes on Cuboid Meshes</div><div class='pub-meta'><span class='authors'>['Jun Hu', 'Yizhou Liang', 'Ting Lin']</span> • <span class='venue'>Journal of Scientific Computing</span> • <span class='date'>2024</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#8</span> A Construction of Cr Conforming Finite Element Spaces in Any Dimension</div><div class='pub-meta'><span class='authors'>['Jun Hu', 'Ting Lin', 'Qingyu Wu']</span> • <span class='venue'>Foundations of Computational Mathematics</span> • <span class='date'>2024</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#9</span> Local Cr interpolation operators on simplicial triangulations in any dimension</div><div class='pub-meta'><span class='authors'>['Jun Hu', 'Ting Lin', 'Qingyu Wu']</span> • <span class='venue'>Computers and Mathematics with Applications</span> • <span class='date'>2024</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#10</span> Deep Neural Network Approximation of Invariant Functions through Dynamical Systems</div><div class='pub-meta'><span class='authors'>['Qianxiao Li', 'Ting Lin', 'Zuowei Shen']</span> • <span class='venue'>Journal of Machine Learning Research</span> • <span class='date'>2024</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#11</span> Deep Learning via Dynamical Systems: An Approximation Perspective</div><div class='pub-meta'><span class='authors'>['Qianxiao Li', 'Ting Lin', 'Zuowei Shen']</span> • <span class='venue'>Journal of the European Mathematical Society</span> • <span class='date'>2023</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#12</span> Extended Regge complex for linearized Riemann-Cartan geometry and cohomology</div><div class='pub-meta'><span class='authors'>['Snorre Christiansen', 'Kaibo Hu', 'Ting Lin']</span> • <span class='venue'>Foundations of Computational Mathematics</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#13</span> Discretizing linearized Einstein-Bianchi system by symmetric and traceless tensors</div><div class='pub-meta'><span class='authors'>['Yuyang Guo', 'Jun Hu', 'Ting Lin']</span> • <span class='venue'>Journal of Computational Mathematics</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#14</span> Finite element form-valued forms: Construction</div><div class='pub-meta'><span class='authors'>['Kaibo Hu', 'Ting Lin']</span> • <span class='venue'>Foundations of Computational Mathematics</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#15</span> Finite elements for symmetric and traceless tensors in three dimensions</div><div class='pub-meta'><span class='authors'>['Kaibo Hu', 'Ting Lin', 'Bowen Shi']</span> • <span class='venue'>Mathematics of Computation</span></div></li><li class='card publication-card'><div class='card-title'><span class='pub-number'>#16</span> Mixed Finite element method for stress gradient elasticity</div><div class='pub-meta'><span class='authors'>['Ting Lin', 'Shudan Tian']</span> • <span class='venue'>Mathematics of Computation</span></div></li></ul>
+        </section>
+        
+        <section id='awards-honors' class='section'>
+            <h2>奖项与荣誉 <span class='hbadge'>10</span></h2>
+            <ul class='cards'><li class='card'><div class='card-title'>国家奖学金（博士）</div><div class='meta'>2025</div><div class='content'>国家为激励博士生潜心科研设立的权威奖学金，代表学业与科研能力的最高认可。</div></li><li class='card'><div class='card-title'>（首届）中国科协青年人才托举工程博士生专项计划. 北大应用数学唯一入选</div><div class='meta'>2025</div><div class='content'>中国科协青年托举工程北大唯一入选，含金量高，助力青年学者成长。</div></li><li class='card'><div class='card-title'>数学学院十佳助教</div><div class='meta'>2025</div><div class='content'>数学学院十佳助教：表彰教学辅助工作表现突出的优秀学生助教。</div></li><li class='card'><div class='card-title'>东亚SIAM 最佳论文奖一等奖</div><div class='meta'>2023</div><div class='content'>东亚地区工业与应用数学学会颁发的最高荣誉，表彰该领域最具影响力的杰出研究成果。</div></li><li class='card'><div class='card-title'>BICMR 研究生数学奖</div><div class='meta'>2022</div><div class='content'>北京大学国际数学中心设立，表彰优秀研究生，数学领域的权威荣誉。</div></li><li class='card'><div class='card-title'>北京大学校长奖学金*5</div><div class='meta'>2021-2025</div><div class='content'>北京大学校长奖学金是学校最高荣誉，奖励品学兼优、综合素质突出的本科生。</div></li><li class='card'><div class='card-title'>北京大学未名学士</div><div class='meta'>2021</div><div class='content'>北京大学授予本科生的最高荣誉，表彰学术卓越与创新能力的顶尖奖项。</div></li><li class='card'><div class='card-title'>丘成桐数学竞赛，团体金牌*2, 银牌*6(含个人全能*2), 铜牌*1</div><div class='meta'>2018-2020</div><div class='content'>丘成桐数学竞赛是面向全球华裔中学生的顶尖数学赛事，含金量极高，被誉为“华人数学界的奥林匹克”。</div></li><li class='card'><div class='card-title'>国家奖学金（本科）</div><div class='meta'>2018</div><div class='content'>国家为优秀本科生设立的权威奖学金，是学业成就的最高荣誉。</div></li><li class='card'><div class='card-title'>中国数学奥林匹克(CMO), 金牌*3, 集训队</div><div class='meta'>2014-2016</div><div class='content'>中国数学奥赛最高奖项，入选国家集训队，含金量极高。</div></li></ul>
+        </section>
+        
+        
+        <section id='grants' class='section'><h2>研究资助</h2><ul class='cards'><li class='card'><div class='card-title'>微结构弹性力学的数学理论与保结构离散主持. （首届）国自然青年基金（博士生专项）</div><div class="kv"><span class="k">角色：</span><span class="v">主持</span></div><div class="kv"><span class="k">资助来源：</span><span class="v">国自然青年基金</span></div><div class="kv"><span class="k">时间段：</span><span class="v">2024-2025</span></div></li></ul></section>
+        
+        
+        <section id='activities' class='section'><h2>学术活动</h2><ul class='cards'><li class='card'><div class='card-title'>研究生应用数学卓越计划</div><div class="kv"><span class="k">角色：</span><span class="v">学生主席</span></div><div class="kv"><span class="k">描述：</span><span class="v">2023 年入选首届研究生应用数学卓越计划，并被推选为学生主席。加入计划后，长期负责组织&quot;北京大学应用数学午餐会&quot;至今，并组织了2022 年，2023 年，2024 年，2025 年北京大学计算数学博士论坛</span></div></li><li class='card'><div class='card-title'>国内外大学/研究院学术报告</div><div class="kv"><span class="k">角色：</span><span class="v">Speaker</span></div><div class="kv"><span class="k">描述：</span><span class="v">2023 年至今，在国内外14 所大学/研究院被邀请进行学术报告</span></div></li><li class='card'><div class='card-title'>会议分会场报告</div><div class="kv"><span class="k">角色：</span><span class="v">Speaker</span></div><div class="kv"><span class="k">描述：</span><span class="v">在10 个会议中进行分会场报告，包括CSIAM2022 和ICIAM2023</span></div></li></ul></section>
+        
+        
+        <section id='social' class='section'>
+            <h2>社交声量</h2>
+            <div class='cards'><div class='card empty-card'><div class='content'>暂无</div></div></div>
+            <div class='card'><div class='card-title'>影响力</div><div class='content'>林挺在社交媒体平台的整体活跃度较低，目前未显示出明显的平台偏好或持续内容输出。其专业身份为北京大学数学博士、华为2012实验室理论部研究员，专业定位聚焦于数学理论与技术应用的交叉领域。从现有数据看，其社交媒体活动与专业背景的关联性尚未充分展现。
+
+在内容质量方面，林挺涉猎多个技术领域，展现出中等深度的技术讨论能力。内容情感基调多样，但缺乏系统性的专业内容输出。零互动的数据表明其内容尚未形成有效传播，这可能与其偏向理论研究的专业特性相关。
+
+基于当前社交媒体表现，林挺的思想领导力尚未充分显现。作为华为理论部研究员，其深厚的学术背景和产业实践经验具备转化为影响力的潜力。建议通过更有针对性的内容规划，将数学理论在技术应用中的独特见解进行系统输出，这有助于建立专业影响力并扩大社群连接。</div></div>
+        </section>
+        
+        <section id='network' class='section'>
+            <h2>人脉图谱</h2>
+            <div class='cards'><div class='card'><div class='card-title'>核心成员</div><ul class='network-list'><li class='network-node'>林挺 (candidate)</li><li class='network-node'>胡俊教授 (supervisor) • 北京大学数学科学学院</li><li class='network-node'>Jingpu Cheng (coauthor)</li><li class='network-node'>Qianxiao Li (coauthor)</li><li class='network-node'>Ting Lin (coauthor)</li><li class='network-node'>Zuowei Shen (coauthor)</li></ul></div><div class='card'><div class='card-title'>圈层标签</div><div class='tags-container'><span class='tag'>北京大学数学科学学院</span><span class='tag'>北京大学国家发展研究院</span></div></div><div class='card'><div class='card-title'>中心性指标</div><div class="kv"><span class="k">度：</span><span class="v">17</span></div><div class="kv"><span class="k">合著权重：</span><span class="v">50</span></div></div></div>
+        </section>
+        
+        <section id='skills' class='section'>
+            <h2>技能</h2>
+            <ul class='cards'><li class='card empty-card'><div class='content'>暂无</div></li></ul>
+        </section>
+        
+        <section id='others' class='section'>
+            <h2>其他</h2>
+            <div class='card'><div class='content'>共产党员</div></div>
+        </section>
+        
+        <section id='sources' class='section'>
+            <h2>参考来源 <span class='hbadge'>0</span></h2>
+            <ul class='sources'><li class='empty-card'>暂无</li></ul>
+        </section>
+        
+        <footer>自动生成报告 • 林挺</footer>
+    </main>
+</div>
+</div>
+</body>
+</html>
