@@ -85,7 +85,7 @@ class CrossValidator:
         social_analysis: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Perform comprehensive cross-validation
+        Perform comprehensive cross-validation with enhanced missing data handling
         
         Args:
             academic_evaluation: Multi-dimension evaluation
@@ -100,11 +100,103 @@ class CrossValidator:
         if not isinstance(social_analysis, dict):
             raise TypeError(f"social_analysis must be dict, got {type(social_analysis).__name__}")
         
+        # Data availability check
+        has_academic_data = bool(academic_evaluation and any(academic_evaluation.values()))
+        has_social_data = bool(social_analysis and (
+            social_analysis.get("social_presence") or 
+            social_analysis.get("platforms") or 
+            social_analysis.get("summary") or
+            social_analysis.get("signals")
+        ))
+        
+        # Handle missing data gracefully
+        if not has_academic_data and not has_social_data:
+            return {
+                "validation_results": [],
+                "inconsistencies": [],
+                "consistency_score": 0.5,  # Neutral when no data
+                "summary": "无法进行交叉验证：缺少学术评价和社交数据",
+                "data_quality": {
+                    "academic_data_available": False,
+                    "social_data_available": False,
+                    "validation_confidence": "low"
+                }
+            }
+        elif not has_academic_data:
+            return {
+                "validation_results": [],
+                "inconsistencies": [],
+                "consistency_score": 0.5,
+                "summary": "无法进行交叉验证：缺少学术评价数据",
+                "data_quality": {
+                    "academic_data_available": False,
+                    "social_data_available": True,
+                    "validation_confidence": "low"
+                }
+            }
+        elif not has_social_data:
+            # Partial validation: we have academic claims but no social signals to verify
+            academic_claims = self._extract_academic_claims(academic_evaluation)
+            return {
+                "validation_results": [{
+                    "claim": claim.to_dict(),
+                    "supporting_signals": [],
+                    "contradicting_signals": [],
+                    "validation_status": "unverified",
+                    "confidence": 0.5
+                } for claim in academic_claims[:10]],  # Limit to 10
+                "inconsistencies": [],
+                "consistency_score": 0.5,
+                "summary": f"部分验证：提取了 {len(academic_claims)} 个学术观点，但缺少社交数据进行验证",
+                "data_quality": {
+                    "academic_data_available": True,
+                    "social_data_available": False,
+                    "validation_confidence": "low"
+                }
+            }
+        
         # Extract claims from academic evaluation
         academic_claims = self._extract_academic_claims(academic_evaluation)
         
         # Extract signals from social analysis
         social_signals = self._extract_social_signals(social_analysis)
+        
+        # Log data quality
+        print(f"[交叉验证-数据] 提取 {len(academic_claims)} 个学术观点, {len(social_signals)} 个社交信号")
+        
+        # Handle case where extraction failed
+        if not academic_claims:
+            return {
+                "validation_results": [],
+                "inconsistencies": [],
+                "consistency_score": 0.5,
+                "summary": "无法提取学术观点，交叉验证终止",
+                "data_quality": {
+                    "academic_data_available": False,
+                    "social_data_available": has_social_data,
+                    "validation_confidence": "low"
+                }
+            }
+        
+        if not social_signals:
+            # Partial: have claims but no signals
+            return {
+                "validation_results": [{
+                    "claim": claim.to_dict(),
+                    "supporting_signals": [],
+                    "contradicting_signals": [],
+                    "validation_status": "unverified",
+                    "confidence": 0.5
+                } for claim in academic_claims[:10]],
+                "inconsistencies": [],
+                "consistency_score": 0.5,
+                "summary": f"部分验证：提取了 {len(academic_claims)} 个学术观点，但未提取到社交信号",
+                "data_quality": {
+                    "academic_data_available": True,
+                    "social_data_available": False,
+                    "validation_confidence": "low"
+                }
+            }
         
         # Cross-validate each claim
         validation_results = []
@@ -123,6 +215,13 @@ class CrossValidator:
             "inconsistencies": [i.to_dict() for i in inconsistencies],
             "consistency_score": round(consistency_score, 2),
             "summary": self._generate_summary(validation_results, inconsistencies, consistency_score),
+            "data_quality": {
+                "academic_data_available": True,
+                "social_data_available": True,
+                "academic_claims_count": len(academic_claims),
+                "social_signals_count": len(social_signals),
+                "validation_confidence": "high" if len(social_signals) >= 5 else "medium"
+            }
         }
         
         return report
@@ -133,9 +232,11 @@ class CrossValidator:
         
         for dimension, content in evaluation.items():
             if isinstance(content, dict):
-                evaluation_text = content.get("evaluation", "")
-            else:
+                evaluation_text = content.get("evaluation", "") or ""
+            elif content is not None:
                 evaluation_text = str(content)
+            else:
+                evaluation_text = ""
             
             # Extract sentences as claims
             sentences = re.split(r'[。！？；]', evaluation_text)
@@ -169,8 +270,17 @@ class CrossValidator:
         """Extract signals from social media analysis"""
         signals = []
         
-        # Extract from social_presence
+        # Handle both data structures:
+        # 1. social_influence dict (from enricher.py, contains summary/signals/platforms)
+        # 2. legacy social_presence list (direct presence data)
+        
+        # Extract from social_presence (if passed directly)
         presence = social_analysis.get("social_presence", [])
+        
+        # If no social_presence, check if this is a social_influence dict
+        if not presence and "platforms" in social_analysis:
+            # Extract from platforms field in social_influence
+            presence = social_analysis.get("platforms", [])
         for item in presence:
             platform = item.get("platform", "unknown")
             
